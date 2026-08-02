@@ -164,6 +164,15 @@ fun AppNavigation(intent: android.content.Intent?) {
     var clickedChatId by remember { mutableStateOf<String?>(null) }
     var clickedChannelId by remember { mutableStateOf<String?>(null) }
 
+    // Enforcement state for this account. Null until the first check completes.
+    // The server enforces bans regardless of what this holds (RLS rejects the
+    // writes); this exists so a suspended user sees the §4 explanation instead
+    // of an opaque failure when they try to send something.
+    var enforcement by remember {
+        mutableStateOf<com.neveroff.data.remote.EnforcementRepository.Status?>(null)
+    }
+    var enforcementCheckToken by remember { mutableStateOf(0) }
+
     LaunchedEffect(intent) {
         val cid = intent?.getStringExtra("chat_id")
         if (!cid.isNullOrEmpty()) {
@@ -424,6 +433,33 @@ fun AppNavigation(intent: android.content.Intent?) {
         }
     }
 
+    // §4: on sign-in and on every explicit re-check, ask whether this account is
+    // suspended. A null result means the check could not run (offline, or the
+    // console backend is not deployed) and is treated as unrestricted — failing
+    // closed here would lock people out of their own app over a network blip,
+    // and the server-side RLS is what actually enforces the ban either way.
+    LaunchedEffect(sessionStatus, enforcementCheckToken) {
+        if (sessionStatus !is SessionStatus.Authenticated) {
+            enforcement = null
+            return@LaunchedEffect
+        }
+
+        val status = com.neveroff.data.remote.EnforcementRepository.fetchStatus()
+        enforcement = status
+
+        val route = navController.currentDestination?.route
+        if (status != null && status.blocksAccess) {
+            if (route != "banned") {
+                // popUpTo(0) clears the whole back stack: §4 requires that no
+                // other surface remains reachable behind this screen.
+                navController.navigate("banned") { popUpTo(0) }
+            }
+        } else if (route == "banned") {
+            // Lifted, expired, or overturned — put them back in the app.
+            navController.navigate("chat_list") { popUpTo(0) }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = "loading",
@@ -435,6 +471,42 @@ fun AppNavigation(intent: android.content.Intent?) {
         composable("loading") {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        }
+        // §4: the blocking screen. Reached only by a navigate("banned") that
+        // clears the back stack, so there is nothing behind it to go back to,
+        // and it registers no back handler of its own.
+        composable("banned") {
+            val current = enforcement
+            if (current == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                com.neveroff.ui.screens.BanScreen(
+                    status = current,
+                    onRefresh = { enforcementCheckToken++ },
+                    onSignOut = {
+                        // Mirrors the Settings logout exactly. Clearing the
+                        // cached profile matters here specifically: the offline
+                        // fallback above routes to chat_list whenever a cached
+                        // profile id exists, so leaving it behind would let a
+                        // signed-out account back past this screen.
+                        scope.launch {
+                            runCatching { SupabaseClient.client.auth.signOut() }
+                            runCatching {
+                                context.getSharedPreferences(
+                                    "neveroff_prefs", android.content.Context.MODE_PRIVATE
+                                ).edit().clear().apply()
+                            }
+                            runCatching { com.neveroff.crypto.CryptoManager.resetKeys(context) }
+                            runCatching { AppDatabase.resetInstance(context) }
+                            myProfile = null
+                            enforcement = null
+                            navController.navigate("login") { popUpTo(0) { inclusive = true } }
+                        }
+                    }
+                )
             }
         }
         composable("profile_setup") {
