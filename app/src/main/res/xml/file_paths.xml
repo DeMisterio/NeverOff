@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The provider has exactly one consumer: UpdateManager.installApk, which hands the staged
+  update APK to the package installer. It is scoped to that one directory deliberately.
+
+  It previously declared <external-path path="."/>, <cache-path path="."/> and
+  <files-path path="."/>, which made the whole of external storage, the entire cache dir
+  (decrypted media is written there) and the entire files dir addressable by any component
+  that could get the app to mint a content:// URI.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="updates" path="updates/" />
+</paths>

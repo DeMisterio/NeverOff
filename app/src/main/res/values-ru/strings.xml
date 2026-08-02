@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">NeverOff</string>
+    <string name="title_profile_setup">Настройка Профиля</string>
+    <string name="subtitle_profile_setup">Так вас будут видеть другие</string>
+    <string name="hint_username">Никнейм</string>
+    <string name="hint_display_name">Отображаемое имя</string>
+    <string name="hint_bio">О себе</string>
+    <string name="btn_start">Начать использовать NeverOff</string>
+    <string name="title_search_users">Поиск пользователей</string>
+    <string name="hint_search">Введите никнейм...</string>
+    <string name="empty_search">Пользователи не найдены</string>
+    <string name="empty_chats">Пока нет чатов.\nНажмите + чтобы найти друзей.</string>
+    <string name="no_messages">Пока нет сообщений</string>
+    <string name="title_settings">Настройки</string>
+    <string name="btn_save">Сохранить изменения</string>
+    <string name="label_language">Язык</string>
+    <string name="label_theme">Тема</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Темная</string>
+    <string name="theme_system">Системная</string>
+    <string name="title_delete_messages">Удалить сообщения</string>
+    <string name="confirm_delete_messages">Вы действительно хотите удалить эти сообщения у всех?</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+</resources>

@@ -1,0 +1,33 @@
+[package]
+name = "crypto-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+name = "crypto_core"
+
+[dependencies]
+# Elliptic curve cryptography
+p256 = { version = "0.13", features = ["ecdh", "pkcs8"] }
+elliptic-curve = { version = "0.13", features = ["sec1"] }
+
+# AES-GCM encryption
+aes-gcm = "0.10"
+aes = "0.8"
+
+# Hashing and HMAC for KDF
+hmac = "0.12"
+sha2 = "0.10"
+
+# Base64 encoding
+base64 = "0.22"
+
+# JNI bindings for Android
+jni = { version = "0.21", features = ["invocation"] }
+
+# For secure random
+rand = "0.8"
+
+# Generic array support
+generic-array = "0.14"

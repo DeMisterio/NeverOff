@@ -1,0 +1,19 @@
+.env
+/env
+.artifacts/
+.idea/
+.DS_Store
+build/
+app/build/
+*.iml
+.gradle/
+local.properties
+
+# Debug/scratch dumps - not project source
+*.log
+history_dump.txt
+logcat_errors.txt
+
+# Saved browser export of the Supabase dashboard (contains session/auth data, ~50MB of cached assets)
+Emails _ Authentication _ NeverOffBase _ Supabase.html
+Emails _ Authentication _ NeverOffBase _ Supabase_files/

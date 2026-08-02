@@ -1,0 +1,979 @@
+package com.neveroff.ui.screens
+
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.neveroff.R
+import com.neveroff.util.SettingsManager
+import com.neveroff.util.ThemePreference
+import kotlinx.coroutines.delay
+
+enum class SettingsCategory {
+    MAIN, APPEARANCE, ANIMATIONS, PRIVACY, LANGUAGE, DEVELOPER
+}
+
+/**
+ * Presets backing the "Animation Smoothness" selector — replaces the old raw bounciness
+ * slider with a handful of named feels, each mapping to (allAnimations, bounciness).
+ */
+private enum class AnimationSmoothness(val label: String, val allAnimations: Boolean, val bounciness: Float) {
+    NONE("No animation", false, 0.1f),
+    BIT_SMOOTH("A bit smooth", true, 0.2f),
+    SMOOTH("Smooth", true, 0.55f),
+    APPLE("Apple smoothness", true, 0.9f);
+
+    companion object {
+        fun resolve(allAnimations: Boolean, bounciness: Float): AnimationSmoothness {
+            if (!allAnimations) return NONE
+            return values().filter { it.allAnimations }.minByOrNull { kotlin.math.abs(it.bounciness - bounciness) } ?: SMOOTH
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    currentProfile: Profile?,
+    onBack: () -> Unit,
+    onProfileUpdated: (Profile) -> Unit,
+    onLogout: () -> Unit
+) {
+    var activeCategory by remember { mutableStateOf(SettingsCategory.MAIN) }
+    var showEditProfile by remember { mutableStateOf(false) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        when (activeCategory) {
+                            SettingsCategory.MAIN -> "Settings"
+                            SettingsCategory.APPEARANCE -> "Appearance"
+                            SettingsCategory.ANIMATIONS -> "Animations"
+                            SettingsCategory.PRIVACY -> "Privacy & Security"
+                            SettingsCategory.LANGUAGE -> "Language"
+                            SettingsCategory.DEVELOPER -> "Developer Settings"
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            if (activeCategory == SettingsCategory.MAIN) {
+                                onBack()
+                            } else if (activeCategory == SettingsCategory.ANIMATIONS) {
+                                activeCategory = SettingsCategory.APPEARANCE
+                            } else {
+                                activeCategory = SettingsCategory.MAIN
+                            }
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when (activeCategory) {
+                SettingsCategory.MAIN -> MainSettingsCategory(
+                    profile = currentProfile,
+                    onOpenCategory = { activeCategory = it },
+                    onEditProfile = { showEditProfile = true },
+                    onLogout = { showLogoutConfirm = true }
+                )
+                SettingsCategory.APPEARANCE -> AppearanceCategoryScreen(
+                    onOpenAnimations = { activeCategory = SettingsCategory.ANIMATIONS }
+                )
+                SettingsCategory.ANIMATIONS -> AnimationsCategoryScreen()
+                SettingsCategory.PRIVACY -> PrivacyCategoryScreen()
+                SettingsCategory.LANGUAGE -> LanguageCategoryScreen()
+                SettingsCategory.DEVELOPER -> DeveloperCategoryScreen()
+            }
+        }
+    }
+
+    if (showEditProfile && currentProfile != null) {
+        EditProfileBottomSheet(
+            isVisible = showEditProfile,
+            profile = currentProfile,
+            onDismiss = { showEditProfile = false },
+            onSave = { newName, newBio ->
+                val updated = currentProfile.copy(display_name = newName, bio = newBio)
+                onProfileUpdated(updated)
+                showEditProfile = false
+            },
+            onPickAvatar = {}
+        )
+    }
+
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Log out?") },
+            text = { Text("You'll need to sign in again to access your chats on this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutConfirm = false
+                    onLogout()
+                }) {
+                    Text("Log out", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun MainSettingsCategory(
+    profile: Profile?,
+    onOpenCategory: (SettingsCategory) -> Unit,
+    onEditProfile: () -> Unit,
+    onLogout: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Profile Card
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditProfile() },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .border(
+                                width = 2.dp,
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(com.neveroff.ui.theme.AccentGradient),
+                                shape = CircleShape
+                            )
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (profile?.avatar_url != null) {
+                            AsyncImage(
+                                model = profile.avatar_url,
+                                contentDescription = "Avatar",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = (profile?.display_name ?: "Me").take(1).uppercase(),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = profile?.display_name ?: "Me",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "@${profile?.username ?: "user"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (!profile?.bio.isNullOrBlank()) {
+                            Text(
+                                text = profile?.bio ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = onEditProfile) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile")
+                    }
+                }
+            }
+        }
+
+        // Navigation Items
+        item {
+            SettingsNavigationRow(
+                icon = Icons.Default.Settings,
+                title = "Appearance & Themes",
+                subtitle = "Themes, colors, bubble text size & animations",
+                onClick = { onOpenCategory(SettingsCategory.APPEARANCE) }
+            )
+        }
+
+        item {
+            SettingsNavigationRow(
+                icon = Icons.Default.Lock,
+                title = "Privacy & Security",
+                subtitle = "Auto-delete, seen indicators, visibility",
+                onClick = { onOpenCategory(SettingsCategory.PRIVACY) }
+            )
+        }
+
+        item {
+            SettingsNavigationRow(
+                icon = Icons.Default.Info,
+                title = "Language",
+                subtitle = "App display language",
+                onClick = { onOpenCategory(SettingsCategory.LANGUAGE) }
+            )
+        }
+
+        item {
+            SettingsNavigationRow(
+                icon = Icons.Default.Build,
+                title = "Developer Settings",
+                subtitle = "Debug logs, auto-save & diagnostic options",
+                onClick = { onOpenCategory(SettingsCategory.DEVELOPER) }
+            )
+        }
+
+        item { UpdatesSettingsSection() }
+
+        item {
+            Surface(
+                onClick = onLogout,
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Log out",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsNavigationRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+        }
+    }
+}
+
+/** Consistent elevated card wrapper used for grouped settings controls (switches, sliders, checkboxes). */
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        shadowElevation = 1.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp), content = content)
+    }
+}
+
+@Composable
+private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
+    val themePref by SettingsManager.themeFlow.collectAsState()
+    val textSize by SettingsManager.bubbleTextSizeFlow.collectAsState()
+    val myBubbleColor by SettingsManager.myBubbleColorFlow.collectAsState()
+    val otherBubbleColor by SettingsManager.otherBubbleColorFlow.collectAsState()
+    val chatTheme by SettingsManager.chatThemeFlow.collectAsState()
+    val wallpaperBrightness by SettingsManager.wallpaperBrightnessFlow.collectAsState()
+    val applyToAlreadyChanged by SettingsManager.applyThemeToAlreadyChangedFlow.collectAsState()
+    val bounciness by SettingsManager.bouncinessFlow.collectAsState()
+    val stretchiness by SettingsManager.stretchinessFlow.collectAsState()
+    val allAnimations by SettingsManager.allAnimationsFlow.collectAsState()
+    val currentChatTheme = remember(chatTheme) { AvailableChatThemes.find { it.name == chatTheme } ?: AvailableChatThemes.first() }
+
+    val colorOptions = listOf(0xFF9C27B0, 0xFF1976D2, 0xFF388E3C, 0xFFF57C00, 0xFFD32F2F, 0xFF3F51B5, 0xFF512DA8)
+    val themeOptions = listOf("Default", "Vintage", "Modernism", "Love", "Ocean", "Forest")
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // App Theme Selector
+        item {
+            SettingsCard {
+                Text("App Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ThemePreference.values().forEach { pref ->
+                        FilterChip(
+                            selected = themePref == pref,
+                            onClick = { SettingsManager.setTheme(pref) },
+                            label = { Text(pref.name) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Live chat preview — reflects every appearance setting below as you change it, and is
+        // fully interactive (scroll it, swipe a bubble) just like the Animations screen's preview.
+        item {
+            Text("Live Preview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Updates live as you change the settings below",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            CombinedChatPreview(
+                theme = currentChatTheme,
+                textSize = textSize,
+                bounciness = bounciness,
+                stretchiness = stretchiness,
+                allAnimations = allAnimations
+            )
+        }
+
+        // Text Size
+        item {
+            SettingsCard {
+                Text("Bubble Text Size: ${textSize.toInt()} sp", style = MaterialTheme.typography.titleMedium)
+                Slider(
+                    value = textSize,
+                    onValueChange = { SettingsManager.setBubbleTextSize(it) },
+                    valueRange = 10f..30f
+                )
+            }
+        }
+
+        // Bubble color pickers removed per Stage 3 spec
+
+        // Chat Theme
+        item {
+            SettingsCard {
+                Text("Chat Wallpaper / Theme", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "For all chats",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(com.neveroff.ui.screens.AvailableChatThemes.size) { index ->
+                        val t = com.neveroff.ui.screens.AvailableChatThemes[index]
+                        val brush = if (t.backgroundGradient.size >= 2 && t.backgroundGradient[0] != Color.Transparent) {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(t.backgroundGradient)
+                        } else {
+                            androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surfaceVariant)
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { SettingsManager.setChatTheme(t.name) }) {
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp, 80.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(brush)
+                                    .border(
+                                        width = if (chatTheme == t.name) 2.dp else 0.dp,
+                                        color = if (chatTheme == t.name) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                            ) {
+                                Box(modifier = Modifier.padding(4.dp).align(Alignment.CenterStart).size(30.dp, 12.dp).clip(RoundedCornerShape(4.dp)).background(t.otherBubbleColor))
+                                Box(modifier = Modifier.padding(4.dp).align(Alignment.CenterEnd).size(30.dp, 12.dp).clip(RoundedCornerShape(4.dp)).background(t.myBubbleColor))
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(t.name, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Wallpaper Brightness
+        item {
+            SettingsCard {
+                Text("Wallpaper Brightness: ${(wallpaperBrightness * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+                Slider(
+                    value = wallpaperBrightness,
+                    onValueChange = { SettingsManager.setWallpaperBrightness(it) },
+                    valueRange = 0.2f..1.0f
+                )
+            }
+        }
+
+        // Apply theme to already changed chats
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Apply to already changed chats", style = MaterialTheme.typography.bodyLarge)
+                    Checkbox(
+                        checked = applyToAlreadyChanged,
+                        onCheckedChange = { SettingsManager.setApplyThemeToAlreadyChanged(it) }
+                    )
+                }
+            }
+        }
+
+        // Animations Menu Link — moved to the bottom now that its old spot holds the live preview
+        item {
+            Surface(
+                onClick = onOpenAnimations,
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = 1.dp,
+                shadowElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Animations", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnimationsCategoryScreen() {
+    val bounciness by SettingsManager.bouncinessFlow.collectAsState()
+    val stretchiness by SettingsManager.stretchinessFlow.collectAsState()
+    val allAnimations by SettingsManager.allAnimationsFlow.collectAsState()
+    val optimiseOptimisation by SettingsManager.optimiseOptimisationFlow.collectAsState()
+    val chatThemeName by SettingsManager.chatThemeFlow.collectAsState()
+    val textSize by SettingsManager.bubbleTextSizeFlow.collectAsState()
+    val currentTheme = remember(chatThemeName) { AvailableChatThemes.find { it.name == chatThemeName } ?: AvailableChatThemes.first() }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Live preview gallery: the exact same MessageBubble used in a real chat, played back
+        // in slow motion. Swipe right for dedicated single-purpose previews (scroll only,
+        // send/receive only, reply gesture only) — every window is interactive.
+        item {
+            Text("Live Preview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Same bubbles and physics as a real chat, slowed down so you can see them. Swipe for more, or just try dragging a bubble yourself.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ChatAnimationPreviewGallery(
+                theme = currentTheme,
+                textSize = textSize,
+                bounciness = bounciness,
+                stretchiness = stretchiness,
+                allAnimations = allAnimations
+            )
+        }
+
+        item {
+            SettingsCard {
+                Text("Animation Smoothness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                val currentPreset = remember(allAnimations, bounciness) { AnimationSmoothness.resolve(allAnimations, bounciness) }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AnimationSmoothness.values().forEach { preset ->
+                        val selected = preset == currentPreset
+                        Surface(
+                            onClick = {
+                                SettingsManager.setAllAnimations(preset.allAnimations)
+                                if (preset.allAnimations) SettingsManager.setBounciness(preset.bounciness)
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(selected = selected, onClick = null)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = preset.label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Bubble Stretchiness", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = stretchiness,
+                        onCheckedChange = { SettingsManager.setStretchiness(it) },
+                        enabled = allAnimations
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Optimise Optimisation", style = MaterialTheme.typography.bodyLarge)
+                    Checkbox(
+                        checked = optimiseOptimisation,
+                        onCheckedChange = { SettingsManager.setOptimiseOptimisation(it) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivacyCategoryScreen() {
+    val autoDeleteDays by SettingsManager.autoDeleteDaysFlow.collectAsState()
+    val seenSelf by SettingsManager.seenIndicatorSelfFlow.collectAsState()
+    val seenOthers by SettingsManager.seenIndicatorOthersFlow.collectAsState()
+    val visBio by SettingsManager.visibilityBioFlow.collectAsState()
+    val visAvatar by SettingsManager.visibilityAvatarFlow.collectAsState()
+    val visOnline by SettingsManager.visibilityOnlineFlow.collectAsState()
+
+    val options = listOf("Everyone", "Contacts", "Nobody")
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            SettingsCard {
+                Text("Auto-delete Messages: ${if (autoDeleteDays == 0) "Off" else "$autoDeleteDays days"}", style = MaterialTheme.typography.titleMedium)
+                Slider(
+                    value = autoDeleteDays.toFloat(),
+                    onValueChange = { SettingsManager.setAutoDeleteDays(it.toInt()) },
+                    valueRange = 0f..30f,
+                    steps = 30
+                )
+            }
+        }
+
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Send Read Receipts (Seen)", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = seenSelf,
+                        onCheckedChange = { SettingsManager.setSeenIndicatorSelf(it) }
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Show Partner Read Receipts", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = seenOthers,
+                        onCheckedChange = { SettingsManager.setSeenIndicatorOthers(it) }
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Text("Who can see my Avatar", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { opt ->
+                        FilterChip(
+                            selected = visAvatar == opt,
+                            onClick = { SettingsManager.setVisibilityAvatar(opt) },
+                            label = { Text(opt) }
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Text("Who can see my Bio", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { opt ->
+                        FilterChip(
+                            selected = visBio == opt,
+                            onClick = { SettingsManager.setVisibilityBio(opt) },
+                            label = { Text(opt) }
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Text("Who can see my Online status", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { opt ->
+                        FilterChip(
+                            selected = visOnline == opt,
+                            onClick = { SettingsManager.setVisibilityOnline(opt) },
+                            label = { Text(opt) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageCategoryScreen() {
+    val language by SettingsManager.languageFlow.collectAsState()
+    var search by remember { mutableStateOf("") }
+    val languages = listOf("English" to "en", "Русский" to "ru")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            placeholder = { Text("Search language...") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        languages.filter { it.first.contains(search, ignoreCase = true) }.forEach { (name, code) ->
+            Surface(
+                onClick = { SettingsManager.setLanguage(code) },
+                shape = RoundedCornerShape(12.dp),
+                color = if (language == code) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = name, style = MaterialTheme.typography.titleMedium)
+                    if (language == code) {
+                        Icon(Icons.Default.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeveloperCategoryScreen() {
+    val debugEnabled by SettingsManager.debugPanelFlow.collectAsState()
+    val autoSaveLogs by SettingsManager.autoSaveLogsFlow.collectAsState()
+    val logPeriod by SettingsManager.logPeriodFlow.collectAsState()
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Enable Debug Panel", style = MaterialTheme.typography.titleMedium)
+                    Switch(
+                        checked = debugEnabled,
+                        onCheckedChange = { SettingsManager.setDebugPanelEnabled(it) }
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Auto Save Diagnostic Logs", style = MaterialTheme.typography.titleMedium)
+                    Switch(
+                        checked = autoSaveLogs,
+                        onCheckedChange = { SettingsManager.setAutoSaveLogs(it) }
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsCard {
+                Text("Log Rotation Period: $logPeriod", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("1h", "6h", "12h", "24h").forEach { period ->
+                        FilterChip(
+                            selected = logPeriod == period,
+                            onClick = { SettingsManager.setLogPeriod(period) },
+                            label = { Text(period) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+/**
+ * Updates block in the main settings menu.
+ *
+ * Deliberately always present: a user who dismissed the update banner on the chat list still
+ * needs somewhere to find the update, so this is the durable entry point for it. Also carries
+ * the auto-download toggle and mirrors any in-flight download.
+ */
+@Composable
+private fun UpdatesSettingsSection() {
+    val context = LocalContext.current
+    val autoDownload by SettingsManager.autoDownloadUpdatesFlow.collectAsState()
+    val available by com.neveroff.util.UpdateController.available.collectAsState()
+    val progress by com.neveroff.util.UpdateController.progress.collectAsState()
+    val downloaded by com.neveroff.util.UpdateController.downloadedFile.collectAsState()
+    var showWhatsNew by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Updates",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Current version ${com.neveroff.util.UpdateManager.CURRENT_APP_VERSION}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Autodownload updates", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Download new versions automatically while you use the app",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = autoDownload,
+                    onCheckedChange = { enabled ->
+                        SettingsManager.setAutoDownloadUpdates(enabled)
+                        // Turning it on with an update already waiting should act immediately
+                        // rather than only from the next check.
+                        if (enabled) com.neveroff.util.UpdateController.maybeAutoDownload(context)
+                    }
+                )
+            }
+
+            if (available != null) {
+                val version = available!!
+                Spacer(Modifier.height(14.dp))
+                Divider()
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "Version ${version.version} available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                if (progress != null) {
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { progress ?: 0f },
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape)
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Downloading ${((progress ?: 0f) * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = { com.neveroff.util.UpdateController.cancelDownload() }) {
+                            Text("Stop")
+                        }
+                    }
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (!version.description.isBlank()) {
+                            TextButton(onClick = { showWhatsNew = true }) { Text("What's new") }
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (downloaded != null) {
+                            Button(onClick = {
+                                com.neveroff.util.UpdateManager.installApk(context, downloaded!!)
+                            }) { Text("Install") }
+                        } else {
+                            Button(onClick = {
+                                com.neveroff.util.UpdateController.startDownload(context)
+                            }) { Text("Download") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showWhatsNew && available != null) {
+        com.neveroff.ui.components.WhatsNewDialog(
+            version = available!!.version,
+            description = available!!.description,
+            onDismiss = { showWhatsNew = false }
+        )
+    }
+}

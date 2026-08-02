@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "45720199941",
+    "project_id": "neveroff-6b9de",
+    "storage_bucket": "neveroff-6b9de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:45720199941:android:46880a7dee279df3358d6c",
+        "android_client_info": {
+          "package_name": "com.neveroff"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3yf57kvgG7Qp3sOMKB97jagT2hqtqpEE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
