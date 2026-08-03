@@ -486,6 +486,15 @@ fun AppNavigation(intent: android.content.Intent?) {
                 com.neveroff.ui.screens.BanScreen(
                     status = current,
                     onRefresh = { enforcementCheckToken++ },
+                    onOpenSupport = {
+                        // Prefilled as an appeal when the reason allows one, so
+                        // the person does not have to work out which category
+                        // their suspension belongs in.
+                        val appealable = current.reason?.appealable == true
+                        navController.navigate(
+                            if (appealable) "support/ban_appeal" else "support/other"
+                        )
+                    },
                     onSignOut = {
                         // Mirrors the Settings logout exactly. Clearing the
                         // cached profile matters here specifically: the offline
@@ -508,6 +517,22 @@ fun AppNavigation(intent: android.content.Intent?) {
                     }
                 )
             }
+        }
+        // §5 / §4: @support. Reachable from Settings normally, and from the ban
+        // screen while suspended — the RPCs behind it ignore the enforcement
+        // predicates, so this works when nothing else does.
+        composable("support") {
+            com.neveroff.ui.screens.SupportScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("support/{category}") { entry ->
+            val category = entry.arguments?.getString("category")
+            com.neveroff.ui.screens.SupportScreen(
+                onBack = { navController.popBackStack() },
+                initialCategoryKey = category,
+                initialSubject = if (category == "ban_appeal") "Appeal against my suspension" else null
+            )
         }
         composable("profile_setup") {
             ProfileSetupScreen(onComplete = {

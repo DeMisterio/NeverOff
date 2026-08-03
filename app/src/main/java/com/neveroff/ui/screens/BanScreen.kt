@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -46,11 +45,17 @@ import java.util.Date
 fun BanScreen(
     status: EnforcementRepository.Status,
     onRefresh: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    /**
+     * Opens the in-app @support surface. §4 requires this be reachable while
+     * suspended — a link out to a web page is not the same thing, because a
+     * suspended user has no session there and nothing ties the conversation to
+     * their account.
+     */
+    onOpenSupport: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
 
     var showAppealForm by remember { mutableStateOf(false) }
     var appealText by remember { mutableStateOf("") }
@@ -296,15 +301,11 @@ fun BanScreen(
             Spacer(Modifier.height(24.dp))
 
             // §4: @support stays reachable while every other surface is locked.
+            // It runs on SECURITY DEFINER RPCs that never consult the
+            // enforcement predicates, so a suspended account can still open a
+            // conversation and be answered in it.
             OutlinedButton(
-                onClick = {
-                    runCatching { uriHandler.openUri("https://neveroff.app/support") }
-                        .onFailure {
-                            android.widget.Toast.makeText(
-                                context, "Could not open support", android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                },
+                onClick = onOpenSupport,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(14.dp)
             ) { Text("Contact @support") }
