@@ -33,6 +33,7 @@ import com.neveroff.R
 import com.neveroff.util.SettingsManager
 import com.neveroff.util.ThemePreference
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 enum class SettingsCategory {
     MAIN, APPEARANCE, ANIMATIONS, PRIVACY, LANGUAGE, DEVELOPER
@@ -894,6 +895,56 @@ private fun UpdatesSettingsSection() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Manual check. Autodownload only runs on the app's own schedule, so
+            // without this there is no way to ask "is there an update?" and get
+            // an answer — and "nothing happened" is indistinguishable from
+            // "the check failed".
+            var checking by remember { mutableStateOf(false) }
+            var checkResult by remember { mutableStateOf<String?>(null) }
+            val checkScope = rememberCoroutineScope()
+
+            OutlinedButton(
+                onClick = {
+                    checking = true
+                    checkResult = null
+                    checkScope.launch {
+                        try {
+                            com.neveroff.util.UpdateController.refresh()
+                            checkResult = if (com.neveroff.util.UpdateController.available.value != null) {
+                                null // the version card below says it better than a line of text
+                            } else {
+                                "You're on the latest version."
+                            }
+                        } catch (e: Exception) {
+                            checkResult = "Couldn't check right now. Try again when you have a connection."
+                        } finally {
+                            checking = false
+                        }
+                    }
+                },
+                enabled = !checking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (checking) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Checking…")
+                } else {
+                    Text("Check for updates")
+                }
+            }
+
+            checkResult?.let { message ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -36,6 +36,17 @@ object GlobalRealtimeManager {
     // To avoid showing notifications when the user is already inside a specific chat
     var currentActiveChatId: String? = null
 
+    /**
+     * Whether the app is on screen right now.
+     *
+     * Read receipts depend on this alongside [currentActiveChatId]: a chat left
+     * open behind a locked screen or under another app is not being read, and
+     * marking its messages "read" tells the sender something untrue. Updated
+     * from MainActivity's lifecycle observer.
+     */
+    @Volatile
+    var isAppInForeground: Boolean = false
+
     fun start(context: Context) {
         if (globalChannel != null) return
         

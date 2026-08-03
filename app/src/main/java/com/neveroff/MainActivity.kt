@@ -79,6 +79,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         com.neveroff.crypto.CryptoManager.init(applicationContext)
+        com.neveroff.util.AppLanguage.init(applicationContext)
         SettingsManager.init(applicationContext)
         com.neveroff.util.LoggerManager.init(applicationContext)
         com.neveroff.util.LoggerManager.setupGlobalExceptionHandler()
@@ -138,6 +139,15 @@ data class ChatInsert(
     val id: String = java.util.UUID.randomUUID().toString(),
     val is_group: Boolean = false
 )
+/**
+ * The official news channel, suggested once at the end of registration.
+ *
+ * A constant rather than a setting: it is the one channel the app itself
+ * vouches for, and making it configurable would mean a compromised config could
+ * point new users at somebody else's channel presented as official.
+ */
+const val OFFICIAL_CHANNEL_USERNAME = "neveroff"
+
 @Serializable
 data class ChatResponse(val id: String)
 @Serializable
@@ -145,6 +155,46 @@ data class ChatParticipantInsert(val chat_id: String, val user_id: String)
 
 @Composable
 fun AppNavigation(intent: android.content.Intent?) {
+    val onboardingContext = androidx.compose.ui.platform.LocalContext.current
+
+    // Onboarding is rendered instead of the navigation graph, not as a route
+    // inside it. The session collectors below navigate on their own as soon as
+    // auth state resolves, so an onboarding route would be raced off the screen
+    // by a cached session before anyone had read a word of the terms.
+    var languageChosen by remember {
+        mutableStateOf(com.neveroff.util.AppLanguage.hasChosen(onboardingContext))
+    }
+    var consentAccepted by remember {
+        mutableStateOf(com.neveroff.legal.LegalConsent.hasAccepted(onboardingContext))
+    }
+    var chosenLanguage by remember {
+        mutableStateOf(com.neveroff.util.AppLanguage.get(onboardingContext))
+    }
+
+    if (!languageChosen) {
+        com.neveroff.ui.screens.LanguagePickerScreen(
+            onChosen = { language ->
+                com.neveroff.util.AppLanguage.set(onboardingContext, language)
+                chosenLanguage = language
+                languageChosen = true
+            }
+        )
+        return
+    }
+
+    if (!consentAccepted) {
+        com.neveroff.ui.screens.LegalConsentScreen(
+            language = chosenLanguage,
+            onAccepted = {
+                com.neveroff.legal.LegalConsent.record(onboardingContext, chosenLanguage)
+                consentAccepted = true
+            },
+            // Reading the terms in the wrong language is a good reason to go back.
+            onChangeLanguage = { languageChosen = false }
+        )
+        return
+    }
+
     val navController = rememberNavController()
     var sessionStatus by remember { mutableStateOf<SessionStatus?>(null) }
     var userEmail by remember { mutableStateOf("") }
@@ -192,6 +242,17 @@ fun AppNavigation(intent: android.content.Intent?) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
+            // Read receipts key off this: a message arriving while the app is
+            // backgrounded has been delivered, not read, even if a chat screen
+            // is still nominally open behind the lock screen.
+            when (event) {
+                Lifecycle.Event.ON_RESUME ->
+                    com.neveroff.data.remote.GlobalRealtimeManager.isAppInForeground = true
+                Lifecycle.Event.ON_PAUSE ->
+                    com.neveroff.data.remote.GlobalRealtimeManager.isAppInForeground = false
+                else -> Unit
+            }
+
             if (event == Lifecycle.Event.ON_RESUME && sessionStatus is SessionStatus.Authenticated) {
                 scope.launch {
                     if (SupabaseClient.client.realtime.status.value != Realtime.Status.CONNECTED) {
@@ -205,7 +266,10 @@ fun AppNavigation(intent: android.content.Intent?) {
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            com.neveroff.data.remote.GlobalRealtimeManager.isAppInForeground = false
+        }
     }
 
     LaunchedEffect(sessionStatus, clickedChatId) {
@@ -536,8 +600,64 @@ fun AppNavigation(intent: android.content.Intent?) {
         }
         composable("profile_setup") {
             ProfileSetupScreen(onComplete = {
-                navController.navigate("loading") { popUpTo(0) }
+                // Suggest the official channel once the account actually works.
+                // Putting it earlier would mean asking someone to subscribe to
+                // news about a product they have not finished signing up for.
+                navController.navigate("official_channel") { popUpTo(0) }
             })
+        }
+        composable("official_channel") {
+            var channel by remember { mutableStateOf<com.neveroff.data.model.Channel?>(null) }
+            var subscribing by remember { mutableStateOf(false) }
+            var loadFailed by remember { mutableStateOf(false) }
+
+            val finish: () -> Unit = {
+                navController.navigate("loading") { popUpTo(0) }
+            }
+
+            LaunchedEffect(Unit) {
+                channel = runCatching {
+                    channelRepository.channelByUsername(OFFICIAL_CHANNEL_USERNAME)
+                }.getOrNull()
+                // If the official channel cannot be resolved — no network, or it
+                // does not exist in this environment — skip silently rather than
+                // stranding a new user on a broken screen at the end of sign-up.
+                if (channel == null) {
+                    loadFailed = true
+                    finish()
+                }
+            }
+
+            val resolved = channel
+            if (resolved != null && !loadFailed) {
+                com.neveroff.ui.screens.OfficialChannelScreen(
+                    channelName = resolved.name,
+                    channelHandle = "n.me/${resolved.username}",
+                    avatarUrl = resolved.avatar_url,
+                    subscriberCount = resolved.subscriber_count,
+                    isSubscribing = subscribing,
+                    onSubscribe = {
+                        subscribing = true
+                        scope.launch {
+                            val ok = runCatching {
+                                channelRepository.subscribe(resolved.id)
+                            }.getOrDefault(false)
+                            subscribing = false
+                            if (!ok) {
+                                com.neveroff.ui.components.AppToast.error(
+                                    "Couldn't subscribe right now — you can find it later in search"
+                                )
+                            }
+                            finish()
+                        }
+                    },
+                    onSkip = finish
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
         }
         composable("login") {
             LoginScreen(onCodeSent = { email ->

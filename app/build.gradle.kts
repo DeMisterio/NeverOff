@@ -21,8 +21,13 @@ android {
         applicationId = "com.neveroff"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "2.12"
+        // 3.0 rather than a point release: this adds a consent gate before
+        // account creation, a language choice, and changes what read receipts
+        // mean. Also unambiguous under UpdateManager.compareVersions, which
+        // compares each dotted part numerically — "2.2" would have read as
+        // older than the shipped "2.12" and reached nobody.
+        versionCode = 8
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

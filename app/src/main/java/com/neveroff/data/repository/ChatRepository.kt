@@ -286,8 +286,24 @@ class ChatRepository(
             "[Encrypted message]"
         }
 
-        // Since the realtime channel is active, the chat screen is open, so message is read immediately.
-        val statusInt = 2 // read
+        // A message is "read" only if the recipient is actually looking at this
+        // conversation right now.
+        //
+        // This used to assume that an active realtime channel meant the chat
+        // screen was open. It does not: GlobalRealtimeManager holds a
+        // subscription for the whole app from sign-in onwards, so every
+        // incoming message was marked read on arrival — the sender saw two blue
+        // ticks for messages the recipient had never opened, and often was not
+        // even in the app for. Read receipts that lie are worse than none.
+        //
+        // currentActiveChatId is set when a chat is opened and cleared when it
+        // is left, and the app must also be in the foreground: a chat left open
+        // behind a locked screen is not being read either.
+        val isViewingThisChat =
+            com.neveroff.data.remote.GlobalRealtimeManager.currentActiveChatId == msg.chat_id &&
+                com.neveroff.data.remote.GlobalRealtimeManager.isAppInForeground
+
+        val statusInt = if (isViewingThisChat) 2 else 1 // 2 = read, 1 = delivered
 
         if (msg.id != null) {
             db.messageDao().insertMessage(
@@ -306,10 +322,12 @@ class ChatRepository(
                 updatedAt = System.currentTimeMillis()
             )
 
-            // Mark as read on server
+            // Tell the sender what actually happened: delivered on arrival, read
+            // only when it was genuinely read. If the recipient opens the chat
+            // later, markChatAsRead promotes it.
             try {
                 SupabaseClient.client.postgrest["messages"]
-                    .update({ set("status", "read") }) {
+                    .update({ set("status", if (isViewingThisChat) "read" else "delivered") }) {
                         filter { eq("id", msg.id) }
                     }
             } catch (e: Exception) {

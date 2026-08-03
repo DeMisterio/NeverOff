@@ -301,6 +301,15 @@ fun ChatScreen(
         )
     }
 
+    // Screenshots are blocked only while a temporary message from the other
+    // person is on screen — those are meant to disappear, and a screenshot
+    // defeats that. Own temporary messages do not count: you can always
+    // screenshot what you yourself sent. SecureScreen clears the flag when this
+    // goes false and again on dispose, so the restriction cannot leak into the
+    // rest of the app.
+    val hasIncomingTemporaryMessage = uiMessages.any { it.isTemp && !it.isMine }
+    com.neveroff.ui.components.SecureScreen(active = hasIncomingTemporaryMessage)
+
     val onlineUsersFromPresence by com.neveroff.data.remote.PresenceManager.onlineUsers.collectAsState()
 
     LaunchedEffect(uiMessages.size) {
@@ -767,7 +776,17 @@ fun ChatScreen(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
             title = { Text("Delete Messages") },
-            text = { Text("How would you like to delete the selected ${selectedMessages.size} messages?") },
+            // "Delete for me" was removed: deleting only your own copy leaves the
+            // message on the other device, so the person doing the deleting
+            // believes it is gone when it is not. On a messenger people reach
+            // for delete precisely when that belief matters, and a delete that
+            // quietly does less than it appears to is worse than no delete.
+            text = {
+                Text(
+                    "Delete ${selectedMessages.size} message(s) for everyone in this chat? " +
+                        "This cannot be undone."
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     val toDelete = selectedMessages.toList()
@@ -784,15 +803,8 @@ fun ChatScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    val toDelete = selectedMessages.toList()
-                    selectedMessages.clear()
-                    showDeleteConfirmDialog = false
-                    listScope.launch {
-                        db.messageDao().deleteMessages(toDelete)
-                    }
-                }) {
-                    Text("Delete for me")
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )
