@@ -243,6 +243,16 @@ fun ChatScreen(
     val selectedMessages = remember { mutableStateListOf<String>() }
     val isSelectionMode = selectedMessages.isNotEmpty()
 
+    // §6.1 reporting. All null when no report is in progress. The evidence
+    // field carries the *decrypted* message text: this device is the only
+    // party that can produce it, and the dialog asks before it is shared.
+    var reportTargetType by remember {
+        mutableStateOf<com.neveroff.data.remote.ReportRepository.TargetType?>(null)
+    }
+    var reportTargetId by remember { mutableStateOf("") }
+    var reportTargetLabel by remember { mutableStateOf("") }
+    var reportEvidence by remember { mutableStateOf<String?>(null) }
+
     // Dialogs & Forwarding
     var showForwardDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
@@ -313,6 +323,29 @@ fun ChatScreen(
                         }
                     },
                     actions = {
+                        // Reporting is per-message: a case is about one piece of
+                        // content, and bundling five unrelated messages into one
+                        // report would make it unactionable.
+                        if (selectedMessages.size == 1) {
+                            IconButton(onClick = {
+                                val id = selectedMessages.first()
+                                val message = uiMessages.firstOrNull { it.id == id }
+                                if (message != null && !message.isMine) {
+                                    reportTargetType =
+                                        com.neveroff.data.remote.ReportRepository.TargetType.MESSAGE
+                                    reportTargetId = id
+                                    reportTargetLabel = "Message from $finalRemoteUserName"
+                                    reportEvidence = message.text
+                                    selectedMessages.clear()
+                                } else {
+                                    com.neveroff.ui.components.AppToast.show(
+                                        "You can only report messages from other people"
+                                    )
+                                }
+                            }) {
+                                Icon(Icons.Default.Flag, contentDescription = "Report message")
+                            }
+                        }
                         IconButton(onClick = { showForwardDialog = true }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
                         }
@@ -402,6 +435,23 @@ fun ChatScreen(
                                         activeLockMode = if (isLocked) LockMode.DISABLE else LockMode.SETUP
                                     }
                                 )
+                                // Reporting the person rather than one message:
+                                // for a pattern of behaviour across a
+                                // conversation, no single message is the case.
+                                chatDetails?.otherUserId?.let { otherId ->
+                                    DropdownMenuItem(
+                                        text = { Text("Report $finalRemoteUserName") },
+                                        onClick = {
+                                            showMenu = false
+                                            reportTargetType = com.neveroff.data.remote
+                                                .ReportRepository.TargetType.USER
+                                            reportTargetId = otherId
+                                            reportTargetLabel = finalRemoteUserName
+                                            // No single message to volunteer here.
+                                            reportEvidence = null
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -832,6 +882,23 @@ fun ChatScreen(
         selectedAvatarUri = null,
         onAvatarUploaded = {}
     )
+
+    // §6.1 report flow. Rendered here rather than inside the menus so it
+    // survives the menu closing underneath it.
+    reportTargetType?.let { type ->
+        com.neveroff.ui.components.ReportDialog(
+            targetType = type,
+            targetId = reportTargetId,
+            targetLabel = reportTargetLabel,
+            availableEvidence = reportEvidence,
+            onDismiss = {
+                reportTargetType = null
+                reportTargetId = ""
+                reportTargetLabel = ""
+                reportEvidence = null
+            }
+        )
+    }
 
     if (showMediaGalleryPicker) {
         com.neveroff.ui.components.MediaGalleryPickerDialog(

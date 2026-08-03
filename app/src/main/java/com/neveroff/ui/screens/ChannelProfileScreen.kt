@@ -63,6 +63,10 @@ fun ChannelProfileScreen(
     val channel by repository.observeChannel(channelId).collectAsState(initial = null)
     var links by remember { mutableStateOf<List<ChannelLink>>(emptyList()) }
 
+    // §6.1: channels are the highest-leverage abuse surface, so they are
+    // reportable in their own right rather than only through their owner.
+    var showReportDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(channelId) {
         repository.fetchChannel(channelId)
         links = repository.fetchLinks(channelId)
@@ -242,6 +246,19 @@ fun ChannelProfileScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+
+                    if (!isOwner) {
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { showReportDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Report this channel",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(40.dp))
@@ -261,6 +278,19 @@ fun ChannelProfileScreen(
                 )
             }
         }
+    }
+
+    if (showReportDialog) {
+        com.neveroff.ui.components.ReportDialog(
+            targetType = com.neveroff.data.remote.ReportRepository.TargetType.CHANNEL,
+            targetId = channelId,
+            targetLabel = channel?.name ?: "this channel",
+            // Channel posts are stored in plaintext, so unlike a private
+            // message the server can already read them. There is nothing for
+            // the reporter to volunteer.
+            availableEvidence = null,
+            onDismiss = { showReportDialog = false }
+        )
     }
 }
 
