@@ -719,6 +719,20 @@ fun AppNavigation(intent: android.content.Intent?) {
                 navController.navigate("official_channel") { popUpTo(0) }
             })
         }
+        composable("backup_setup") {
+            val backupUserId = com.neveroff.util.CurrentUser.id(context)
+            com.neveroff.ui.screens.SetBackupPassphraseScreen(
+                userId = backupUserId,
+                hasExistingBackup = false,
+                isOnboarding = true,
+                onDone = { navController.navigate("chat_list") { popUpTo(0) } },
+                // Skippable: a passphrase somebody was pressured into inventing
+                // in ten seconds is one they will not remember, and an
+                // unrememberable passphrase is the same outcome as no backup
+                // with extra steps. The banner asks again later.
+                onBack = { navController.navigate("chat_list") { popUpTo(0) } }
+            )
+        }
         composable("official_channel") {
             var channel by remember { mutableStateOf<com.neveroff.data.model.Channel?>(null) }
             var subscribing by remember { mutableStateOf(false) }
@@ -727,8 +741,13 @@ fun AppNavigation(intent: android.content.Intent?) {
             // Straight to the app: "loading" only resolves when the session
             // collector emits, and it does not emit again for an account that
             // was already authenticated when it arrived here.
+            // Registration now ends on the backup step rather than the chat
+            // list. Offering it here is the only moment it is free: there is no
+            // history to lose yet, so setting a passphrase now protects
+            // everything the account will ever send. Offered after the account
+            // exists, because it seals a key that has to exist first.
             val finish: () -> Unit = {
-                navController.navigate("chat_list") { popUpTo(0) }
+                navController.navigate("backup_setup") { popUpTo(0) }
             }
 
             LaunchedEffect(Unit) {
@@ -819,7 +838,19 @@ fun AppNavigation(intent: android.content.Intent?) {
                 },
                 onChannelSelected = { channelId ->
                     navController.navigate("channel/$channelId")
-                }
+                },
+                onSetUpBackup = { navController.navigate("backup_setup_settings") }
+            )
+        }
+        // Same screen as the registration step, reached from the reminder
+        // banner. A separate route only so that "back" returns to the chat list
+        // instead of replaying the end of sign-up.
+        composable("backup_setup_settings") {
+            com.neveroff.ui.screens.SetBackupPassphraseScreen(
+                userId = com.neveroff.util.CurrentUser.id(context),
+                hasExistingBackup = false,
+                onDone = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
             )
         }
         composable("user_profile") {

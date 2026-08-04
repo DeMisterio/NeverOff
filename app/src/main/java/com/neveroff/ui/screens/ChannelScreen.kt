@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -113,10 +114,25 @@ fun ChannelScreen(
         visibleIds.forEach { viewModel.registerView(it) }
     }
 
-    // New posts arrive at the bottom; follow them only if the reader is already there.
+    // Open at the newest post, the way a chat does. Without this the list would
+    // start at the top, which for a channel with months of history means
+    // landing on a post from last year.
+    var hasJumpedToLatest by remember { mutableStateOf(false) }
+    LaunchedEffect(posts.isNotEmpty()) {
+        if (posts.isNotEmpty() && !hasJumpedToLatest) {
+            listState.scrollToItem(posts.lastIndex)
+            hasJumpedToLatest = true
+        }
+    }
+
+    // New posts arrive at the bottom; follow them only if the reader is already
+    // there, so somebody reading back through history is not yanked away.
     LaunchedEffect(posts.size) {
-        if (posts.isNotEmpty() && listState.firstVisibleItemIndex <= 2) {
-            listState.animateScrollToItem(0)
+        if (posts.isNotEmpty() && hasJumpedToLatest) {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            if (lastVisible >= posts.lastIndex - 2) {
+                listState.animateScrollToItem(posts.lastIndex)
+            }
         }
     }
 
@@ -276,14 +292,30 @@ fun ChannelScreen(
                     }
                 }
                 else -> {
+                    // Plain ascending order, laid out normally: oldest at the
+                    // top, newest at the bottom, scrolled to the end on open.
+                    //
+                    // This previously reversed the data *and* set
+                    // reverseLayout, which is a double negation that is
+                    // genuinely hard to reason about and was not producing what
+                    // it looked like it should. One direction, stated once,
+                    // with the scroll position handled explicitly below.
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        reverseLayout = true
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(posts.reversed(), key = { it.id }) { post ->
+                        itemsIndexed(posts, key = { _, p -> p.id }) { index, post ->
+                            // A channel's posts can span months, so the day
+                            // pill matters more here than in a chat.
+                            if (com.neveroff.ui.components.startsNewDay(
+                                    post.createdAt,
+                                    posts.getOrNull(index - 1)?.createdAt
+                                )
+                            ) {
+                                com.neveroff.ui.components.DaySeparator(post.createdAt)
+                            }
                             ChannelPostItem(
                                 post = post,
                                 allowedReactions = allowedReactions,

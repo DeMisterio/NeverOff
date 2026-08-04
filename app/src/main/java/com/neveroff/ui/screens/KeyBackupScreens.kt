@@ -57,7 +57,9 @@ fun SetBackupPassphraseScreen(
     userId: String,
     hasExistingBackup: Boolean,
     onDone: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    /** Registration: the exit is "skip", not "cancel", and it warns rather than just leaving. */
+    isOnboarding: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -177,8 +179,94 @@ fun SetBackupPassphraseScreen(
                 }
             }
 
+            if (isOnboarding) {
+                Text(
+                    text = stringResource(R.string.backup_setup_skip_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_cancel))
+                Text(
+                    stringResource(
+                        if (isOnboarding) R.string.backup_setup_skip else R.string.action_cancel
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Prompt for accounts that have no backup yet.
+ *
+ * Sits above the chat list. Dismissible, and it comes back on the next launch
+ * rather than never again: the cost of ignoring it is total and silent, and
+ * "the user tapped Later once, six months ago" is a poor reason to let their
+ * history go. It disappears permanently the moment a backup exists, which is
+ * the only dismissal that actually means anything.
+ */
+@Composable
+fun BackupReminderBanner(
+    userId: String,
+    onSetUp: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var needed by remember(userId) { mutableStateOf(false) }
+    var dismissed by remember(userId) { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            // Only nags when the device holds a key worth protecting. A brand
+            // new install that has not generated one yet has nothing to lose.
+            needed = com.neveroff.crypto.CryptoManager.hasStoredKeyPair() &&
+                !KeyBackupRepository.exists(userId)
+        }
+    }
+
+    if (!needed || dismissed) return
+
+    androidx.compose.material3.Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                Text(
+                    text = stringResource(R.string.backup_nag_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+            Text(
+                text = stringResource(R.string.backup_nag_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Button(onClick = onSetUp) {
+                    Text(stringResource(R.string.backup_nag_action))
+                }
+                TextButton(onClick = { dismissed = true }) {
+                    Text(
+                        stringResource(R.string.backup_nag_later),
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
             }
         }
     }
@@ -208,17 +296,31 @@ fun ChatBackupSettingsSection() {
         loaded = true
     }
 
+    // Shown in a full-screen dialog, NOT inline.
+    //
+    // This section is rendered inside a LazyColumn item, and a LazyColumn
+    // measures its children with an infinite maximum height. Putting a
+    // fillMaxSize + verticalScroll composable in there is an immediate
+    // IllegalStateException, not a layout glitch — the app died the instant
+    // this button was pressed. A dialog gets its own window and its own real
+    // constraints, so the screen can size itself normally.
     if (showSetup) {
-        SetBackupPassphraseScreen(
-            userId = userId,
-            hasExistingBackup = backedUpAt != null,
-            onDone = {
-                showSetup = false
-                scope.launch { backedUpAt = KeyBackupRepository.fetch(userId)?.updated_at }
-            },
-            onBack = { showSetup = false }
-        )
-        return
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showSetup = false },
+            properties = androidx.compose.ui.window.DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            SetBackupPassphraseScreen(
+                userId = userId,
+                hasExistingBackup = backedUpAt != null,
+                onDone = {
+                    showSetup = false
+                    scope.launch { backedUpAt = KeyBackupRepository.fetch(userId)?.updated_at }
+                },
+                onBack = { showSetup = false }
+            )
+        }
     }
 
     Column(

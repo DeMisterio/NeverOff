@@ -90,7 +90,8 @@ fun ChatListScreen(
     onSearchUsers: () -> Unit,
     onMyProfileClick: () -> Unit,
     onProfileUpdated: (Profile) -> Unit = {},
-    onChannelSelected: (String) -> Unit = {}
+    onChannelSelected: (String) -> Unit = {},
+    onSetUpBackup: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { com.neveroff.data.local.AppDatabase.getDatabase(context) }
@@ -403,6 +404,15 @@ fun ChatListScreen(
                                 alpha = if (isConnecting) waveAlpha else 1.0f
                             }
                     ) {
+                        // Removes itself once a backup exists, so it is a
+                        // prompt rather than a permanent fixture.
+                        item(key = "backup_reminder") {
+                            BackupReminderBanner(
+                                userId = myId,
+                                onSetUp = onSetUpBackup,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
                         items(
                             items = listEntries,
                             key = { entry ->

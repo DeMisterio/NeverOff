@@ -87,4 +87,18 @@
     <string name="restore_wrong">That passphrase does not open this backup.</string>
     <string name="restore_done">Messages restored</string>
     <string name="restore_working">Unlocking…</string>
+
+    <!-- Prompt shown to accounts that have no backup yet. -->
+    <string name="backup_nag_title">Don\'t lose your chats</string>
+    <string name="backup_nag_body">Your messages can only be read on this phone. Set a recovery passphrase so you can get them back on a new device.</string>
+    <string name="backup_nag_action">Set it up</string>
+    <string name="backup_nag_later">Later</string>
+
+    <!-- Offered once during registration, before the first message exists. -->
+    <string name="backup_setup_skip">Skip for now</string>
+    <string name="backup_setup_skip_warning">You can set this later in Settings, but any messages sent before you do cannot be recovered if you lose this phone.</string>
+
+    <!-- Day separators between messages and channel posts. -->
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
 </resources>

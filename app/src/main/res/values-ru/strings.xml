@@ -83,4 +83,18 @@
     <string name="restore_wrong">Этот пароль не открывает резервную копию.</string>
     <string name="restore_done">Сообщения восстановлены</string>
     <string name="restore_working">Расшифровка…</string>
+
+    <!-- Напоминание для аккаунтов без резервной копии. -->
+    <string name="backup_nag_title">Не потеряйте свои чаты</string>
+    <string name="backup_nag_body">Ваши сообщения можно прочитать только на этом телефоне. Задайте пароль восстановления, чтобы вернуть их на новом устройстве.</string>
+    <string name="backup_nag_action">Настроить</string>
+    <string name="backup_nag_later">Позже</string>
+
+    <!-- Предлагается один раз при регистрации. -->
+    <string name="backup_setup_skip">Пропустить</string>
+    <string name="backup_setup_skip_warning">Это можно настроить позже в настройках, но сообщения, отправленные до этого, нельзя будет восстановить при потере телефона.</string>
+
+    <!-- Разделители дней между сообщениями и постами. -->
+    <string name="day_today">Сегодня</string>
+    <string name="day_yesterday">Вчера</string>
 </resources>

@@ -12,6 +12,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -803,8 +804,22 @@ fun ChatScreen(
                 contentPadding = PaddingValues(16.dp),
                 reverseLayout = true
             ) {
-                items(uiMessages.reversed(), key = { it.id }) { msg ->
+                // Reversed data plus reverseLayout: index 0 is drawn at the
+                // bottom, so the message visually ABOVE index i is index i+1 —
+                // the older one. That is what the day pill compares against.
+                // Getting this backwards puts the separator under the last
+                // message of a day instead of over the first.
+                val orderedForDisplay = uiMessages.reversed()
+                itemsIndexed(orderedForDisplay, key = { _, m -> m.id }) { index, msg ->
                     Box(modifier = Modifier.animateItemPlacement()) {
+                      Column {
+                        if (com.neveroff.ui.components.startsNewDay(
+                                msg.timestamp,
+                                orderedForDisplay.getOrNull(index + 1)?.timestamp
+                            )
+                        ) {
+                            com.neveroff.ui.components.DaySeparator(msg.timestamp)
+                        }
                         MessageBubble(
                             msg = msg, 
                             allMessages = uiMessages, 
@@ -834,6 +849,7 @@ fun ChatScreen(
                             channelRepository = channelRepository,
                             onOpenChannel = onOpenChannel
                         )
+                      }
                     }
                 }
             }
