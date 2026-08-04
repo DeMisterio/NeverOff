@@ -312,7 +312,7 @@ fun ChatListScreen(
                         // "Connecting...", and offer the fixes that actually tend to work.
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Can't connect",
+                                text = stringResource(R.string.can_t_connect_2),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = ConnectionWarningColor
@@ -560,7 +560,7 @@ fun ChatListScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
-                                    text = "A new version of NeverOff is ready.",
+                                    text = stringResource(R.string.a_new_version_of_neveroff_is),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
@@ -650,7 +650,7 @@ fun ChatListScreen(
                         .verticalScroll(rememberScrollState())
                 ) {
                     Text(
-                        text = "NeverOff can't reach the server right now. Your messages are safe — " +
+                        text = stringResource(R.string.neveroff_can_t_reach_the_server) +
                             "anything you send will go out once the connection is back.",
                         style = MaterialTheme.typography.bodyMedium
                     )

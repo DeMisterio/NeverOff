@@ -120,7 +120,7 @@ fun BanScreen(
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Text(
-                            text = "Reason",
+                            text = stringResource(R.string.restriction_reason),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -163,7 +163,7 @@ fun BanScreen(
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Text(
-                            text = "Reference",
+                            text = stringResource(R.string.reference),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -178,7 +178,7 @@ fun BanScreen(
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Quote this if you contact support.",
+                            text = stringResource(R.string.quote_this_if_you_contact_support),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -205,7 +205,7 @@ fun BanScreen(
                 status.canAppeal && showAppealForm -> {
                     Column(Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Tell us what we got wrong. Someone other than the person " +
+                            text = stringResource(R.string.tell_us_what_we_got_wrong) +
                                 "who made this decision will read it.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -292,7 +292,7 @@ fun BanScreen(
 
                 else -> {
                     Text(
-                        text = "Decisions of this type cannot be appealed in the app.",
+                        text = stringResource(R.string.decisions_of_this_type_cannot_be),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)

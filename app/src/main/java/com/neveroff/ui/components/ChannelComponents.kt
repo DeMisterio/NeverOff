@@ -219,14 +219,14 @@ fun SubscribeButton(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Subscribed",
+                        text = stringResource(R.string.subscribed),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge
                     )
                 } else {
                     Text(
-                        text = "Subscribe",
+                        text = stringResource(R.string.subscribe),
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold,
                         style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge

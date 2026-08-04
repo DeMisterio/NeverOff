@@ -234,7 +234,7 @@ fun ProfileDialog(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Юзернейм",
+                text = stringResource(R.string.label_username),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -261,7 +261,7 @@ fun ProfileDialog(
             if (!profile!!.bio.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "О себе",
+                    text = stringResource(R.string.label_about),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

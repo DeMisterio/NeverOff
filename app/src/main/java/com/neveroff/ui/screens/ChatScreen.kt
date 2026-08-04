@@ -1120,7 +1120,7 @@ fun ChatScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(stringResource(R.string.chat_themes), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "For this chat",
+                    text = stringResource(R.string.for_this_chat),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1406,7 +1406,14 @@ fun MessageBubble(
                                     onUserDragActive?.invoke(false)
                                 }
                             ) { _, dragAmount ->
-                                rawDragX += dragAmount * 0.5f
+                                // Rightward only. Only a right drag past the
+                                // threshold triggers a reply, but the bubble
+                                // used to follow a leftward drag just as far
+                                // and then spring back having done nothing —
+                                // an affordance that moves and means nothing,
+                                // which reads as a broken app rather than as a
+                                // gesture that does not exist.
+                                rawDragX = (rawDragX + dragAmount * 0.5f).coerceAtLeast(0f)
                             }
                         }
                     }
@@ -1451,7 +1458,7 @@ fun MessageBubble(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Temporary",
+                            text = stringResource(R.string.temporary),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             fontWeight = FontWeight.Bold,
@@ -1471,7 +1478,7 @@ fun MessageBubble(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Forwarded",
+                            text = stringResource(R.string.forward_sent),
                             style = MaterialTheme.typography.labelSmall,
                             color = labelColor,
                             fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
@@ -1511,7 +1518,7 @@ fun MessageBubble(
                         ) {
                             Column(modifier = Modifier.padding(8.dp)) {
                                 Text(
-                                    text = "Original message",
+                                    text = stringResource(R.string.original_message),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = contentTextColor.copy(alpha = 0.5f)

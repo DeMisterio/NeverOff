@@ -180,7 +180,7 @@ fun ChannelPostItem(
                     if (post.sendState == 1) {
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            text = "Sending…",
+                            text = stringResource(R.string.sending),
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -445,7 +445,7 @@ private fun CommentsSoonPill() {
             )
             Spacer(Modifier.width(5.dp))
             Text(
-                text = "Comments are coming soon",
+                text = stringResource(R.string.comments_are_coming_soon),
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)

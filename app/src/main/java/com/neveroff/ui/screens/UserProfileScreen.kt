@@ -167,7 +167,7 @@ fun UserProfileScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Username",
+                        text = stringResource(R.string.hint_username),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -193,7 +193,7 @@ fun UserProfileScreen(
                     if (!profile.bio.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Bio",
+                            text = stringResource(R.string.hint_bio),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )

@@ -134,7 +134,7 @@ fun WarningNoticeScreen(
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Text(
-                            text = "Reason",
+                            text = stringResource(R.string.restriction_reason),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -178,7 +178,7 @@ fun WarningNoticeScreen(
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Text(
-                            text = "What this affects",
+                            text = stringResource(R.string.what_this_affects),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -215,7 +215,7 @@ fun WarningNoticeScreen(
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Text(
-                            text = "Reference",
+                            text = stringResource(R.string.reference),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -236,7 +236,7 @@ fun WarningNoticeScreen(
 
             if (failed) {
                 Text(
-                    text = "Couldn't confirm this with the server. You can try again, " +
+                    text = stringResource(R.string.couldn_t_confirm_this_with_the) +
                         "or continue and we'll show it to you next time.",
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,

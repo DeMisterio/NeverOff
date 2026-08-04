@@ -62,7 +62,7 @@ fun LoginScreen(onCodeSent: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Enter your email to sign in or sign up",
+                text = stringResource(R.string.enter_your_email_to_sign_in),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )

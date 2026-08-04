@@ -48,14 +48,20 @@ fun EditProfileBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                // imePadding BEFORE verticalScroll. Applied after, the padding
+                // becomes part of the scrollable content and simply scrolls
+                // away with it, leaving the viewport the same height and the
+                // field you are typing in still behind the keyboard. Applied
+                // here it insets the viewport itself, which is what actually
+                // moves the bio field into view.
                 .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Изменить профиль",
+                text = stringResource(R.string.edit_profile_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )

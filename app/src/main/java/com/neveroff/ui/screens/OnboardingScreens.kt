@@ -54,7 +54,7 @@ fun LanguagePickerScreen(onChosen: (AppLanguage.Language) -> Unit) {
             Spacer(Modifier.height(40.dp))
 
             Text(
-                text = "NeverOff",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -65,7 +65,7 @@ fun LanguagePickerScreen(onChosen: (AppLanguage.Language) -> Unit) {
             // Shown in both languages, because at this point we do not yet know
             // which one they read.
             Text(
-                text = "Choose your language\nВыберите язык",
+                text = stringResource(R.string.choose_your_language_n),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)

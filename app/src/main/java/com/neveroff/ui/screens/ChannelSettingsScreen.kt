@@ -328,7 +328,7 @@ fun ChannelSettingsScreen(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "Add",
+                                text = stringResource(R.string.add),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )

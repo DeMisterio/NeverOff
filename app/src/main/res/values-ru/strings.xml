@@ -273,4 +273,47 @@
     <string name="profile_not_found">Профиль не найден</string>
     <string name="biometric_unlock_title">Разблокировка чата</string>
     <string name="biometric_unlock_subtitle">Приложите палец или посмотрите в камеру</string>
+
+    <!-- Migrated from hardcoded literals. -->
+    <string name="a_new_version_of_neveroff_is">Готова новая версия NeverOff.</string>
+    <string name="a_private_channel_gets_an_unguessable">У частного канала будет неугадываемая ссылка вместо выбранной.</string>
+    <string name="add">Добавить</string>
+    <string name="add_your_instagram_snapchat_tiktok_or">Добавьте Instagram, Snapchat, TikTok или Telegram, чтобы вас могли найти и там.</string>
+    <string name="broadcast_posts_to_everyone_who_subscribes">Публикуйте посты для всех подписчиков</string>
+    <string name="can_t_connect_2">Нет соединения</string>
+    <string name="choose_your_language_n">Choose your language\nВыберите язык</string>
+    <string name="comments_are_coming_soon">Комментарии скоро появятся</string>
+    <string name="couldn_t_confirm_this_with_the">Не удалось подтвердить это на сервере. Можно попробовать снова,</string>
+    <string name="create_a_channel">Создать канал</string>
+    <string name="decisions_of_this_type_cannot_be">Решения такого типа нельзя обжаловать в приложении.</string>
+    <string name="download_new_versions_automatically_while_you">Загружать новые версии автоматически во время использования</string>
+    <string name="enter_your_email_to_sign_in">Введите почту, чтобы войти или зарегистрироваться</string>
+    <string name="for_all_chats">Для всех чатов</string>
+    <string name="for_this_chat">Для этого чата</string>
+    <string name="if_someone_is_in_immediate_danger_2">Если кому-то угрожает опасность прямо сейчас, обратитесь</string>
+    <string name="include_the_message_so_we_can">Приложить сообщение, чтобы мы могли его прочитать</string>
+    <string name="neveroff_can_t_reach_the_server">NeverOff не может связаться с сервером. Ваши сообщения в безопасности —</string>
+    <string name="official_help_from_the_neveroff_team">Официальная помощь от команды NeverOff</string>
+    <string name="original_message">Исходное сообщение</string>
+    <string name="posts_in_a_channel_are_visible">Посты в канале видны всем, кто его откроет, поэтому они не</string>
+    <string name="private_invite_link">Частная ссылка-приглашение</string>
+    <string name="quote_this_if_you_contact_support">Укажите это, если будете обращаться в поддержку.</string>
+    <string name="recent">Недавние</string>
+    <string name="reference">Номер</string>
+    <string name="report_this_channel">Пожаловаться на канал</string>
+    <string name="reports_are_anonymous_the_person_you">Жалобы анонимны. Тот, на кого вы жалуетесь,</string>
+    <string name="same_bubbles_and_physics_as_a">Те же пузырьки и физика, что и в настоящем чате, только замедленно. Пролистайте дальше или попробуйте потянуть пузырёк сами.</string>
+    <string name="sending">Отправляем…</string>
+    <string name="subscribe">Подписаться</string>
+    <string name="support">@support</string>
+    <string name="tell_us_what_we_got_wrong">Расскажите, в чём мы ошиблись. Обращение рассмотрит не тот,</string>
+    <string name="temporary">Временное</string>
+    <string name="updates">Обновления</string>
+    <string name="updates_live_as_you_change_the">Меняется сразу при изменении настроек ниже</string>
+    <string name="what_s_new_2">Что нового</string>
+    <string name="what_this_affects">На что это влияет</string>
+    <string name="what_would_you_like_to_happen">Чего бы вы хотели?</string>
+    <string name="your_messages_are_end_to_end">Ваши сообщения защищены сквозным</string>
+    <string name="edit_profile_title">Изменить профиль</string>
+    <string name="label_username">Юзернейм</string>
 </resources>

@@ -193,7 +193,7 @@ fun SearchUserScreen(
             } else if (searchQuery.isBlank()) {
                 if (recentSearches.isNotEmpty()) {
                     Text(
-                        text = "Recent",
+                        text = stringResource(R.string.recent),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -345,7 +345,7 @@ private fun SupportListItem(onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "@support",
+                        text = stringResource(R.string.support),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -360,7 +360,7 @@ private fun SupportListItem(onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Official help from the NeverOff team",
+                    text = stringResource(R.string.official_help_from_the_neveroff_team),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
@@ -412,14 +412,14 @@ private fun CreateChannelBanner(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Create a channel",
+                    text = stringResource(R.string.create_a_channel),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Broadcast posts to everyone who subscribes",
+                    text = stringResource(R.string.broadcast_posts_to_everyone_who_subscribes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )

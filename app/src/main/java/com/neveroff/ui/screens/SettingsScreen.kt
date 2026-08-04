@@ -329,7 +329,7 @@ private fun MainSettingsCategory(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Log out",
+                        text = stringResource(R.string.log_out_2),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -448,7 +448,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
         item {
             Text(stringResource(R.string.live_preview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                text = "Updates live as you change the settings below",
+                text = stringResource(R.string.updates_live_as_you_change_the),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -486,7 +486,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
             ) {
                 Text(stringResource(R.string.chat_wallpaper_theme), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "For all chats",
+                    text = stringResource(R.string.for_all_chats),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -609,7 +609,7 @@ private fun AnimationsCategoryScreen() {
         item {
             Text(stringResource(R.string.live_preview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                text = "Same bubbles and physics as a real chat, slowed down so you can see them. Swipe for more, or just try dragging a bubble yourself.",
+                text = stringResource(R.string.same_bubbles_and_physics_as_a),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -930,7 +930,7 @@ private fun UpdatesSettingsSection() {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Updates",
+                text = stringResource(R.string.updates),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -996,7 +996,7 @@ private fun UpdatesSettingsSection() {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.autodownload_updates), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = "Download new versions automatically while you use the app",
+                        text = stringResource(R.string.download_new_versions_automatically_while_you),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

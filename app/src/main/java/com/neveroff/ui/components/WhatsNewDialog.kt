@@ -61,7 +61,7 @@ fun WhatsNewDialog(
         title = {
             Column {
                 Text(
-                    text = "What's New",
+                    text = stringResource(R.string.what_s_new_2),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )

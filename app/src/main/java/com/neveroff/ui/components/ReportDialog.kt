@@ -132,7 +132,7 @@ fun ReportDialog(
                                     color = MaterialTheme.colorScheme.errorContainer
                                 ) {
                                     Text(
-                                        text = "If someone is in immediate danger, please contact " +
+                                        text = stringResource(R.string.if_someone_is_in_immediate_danger_2) +
                                             "your local emergency services. They can help far " +
                                             "faster than we can.",
                                         modifier = Modifier.padding(14.dp),
@@ -193,13 +193,13 @@ fun ReportDialog(
                                             Spacer(Modifier.width(4.dp))
                                             Column {
                                                 Text(
-                                                    text = "Include the message so we can read it",
+                                                    text = stringResource(R.string.include_the_message_so_we_can),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                                 Spacer(Modifier.height(4.dp))
                                                 Text(
-                                                    text = "Your messages are end-to-end " +
+                                                    text = stringResource(R.string.your_messages_are_end_to_end) +
                                                         "encrypted, so we cannot see them. If you " +
                                                         "do not include it, we can still act on " +
                                                         "patterns of behaviour, but nobody will " +
@@ -216,7 +216,7 @@ fun ReportDialog(
 
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                text = "What would you like to happen?",
+                                text = stringResource(R.string.what_would_you_like_to_happen),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
@@ -254,7 +254,7 @@ fun ReportDialog(
 
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                text = "Reports are anonymous. The person you are reporting is " +
+                                text = stringResource(R.string.reports_are_anonymous_the_person_you) +
                                     "never told who reported them.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

@@ -445,7 +445,7 @@ private fun ChannelDetailsStep(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = "Add",
+                        text = stringResource(R.string.add),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -455,7 +455,7 @@ private fun ChannelDetailsStep(
 
         if (linkDrafts.isEmpty()) {
             Text(
-                text = "Add your Instagram, Snapchat, TikTok or Telegram so people can find you elsewhere.",
+                text = stringResource(R.string.add_your_instagram_snapchat_tiktok_or),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
@@ -607,13 +607,13 @@ private fun ChannelSettingsStep(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Private invite link",
+                        text = stringResource(R.string.private_invite_link),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "A private channel gets an unguessable link instead of a chosen one. " +
+                        text = stringResource(R.string.a_private_channel_gets_an_unguessable) +
                             "You'll find it on the channel page once it's created — share it with " +
                             "whoever should be able to read.",
                         style = MaterialTheme.typography.bodySmall,
@@ -625,7 +625,7 @@ private fun ChannelSettingsStep(
 
         Spacer(Modifier.height(20.dp))
         Text(
-            text = "Posts in a channel are visible to everyone who opens it, so they are not " +
+            text = stringResource(R.string.posts_in_a_channel_are_visible) +
                 "end-to-end encrypted the way your chats are.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

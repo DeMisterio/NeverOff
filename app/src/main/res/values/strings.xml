@@ -277,4 +277,47 @@
     <string name="your_turn">Your turn</string>
     <string name="biometric_unlock_title">Unlock chat</string>
     <string name="biometric_unlock_subtitle">Use your fingerprint or face to unlock</string>
+
+    <!-- Migrated from hardcoded literals. -->
+    <string name="a_new_version_of_neveroff_is">A new version of NeverOff is ready.</string>
+    <string name="a_private_channel_gets_an_unguessable">A private channel gets an unguessable link instead of a chosen one. </string>
+    <string name="add">Add</string>
+    <string name="add_your_instagram_snapchat_tiktok_or">Add your Instagram, Snapchat, TikTok or Telegram so people can find you elsewhere.</string>
+    <string name="broadcast_posts_to_everyone_who_subscribes">Broadcast posts to everyone who subscribes</string>
+    <string name="can_t_connect_2">Can\'t connect</string>
+    <string name="choose_your_language_n">Choose your language\nВыберите язык</string>
+    <string name="comments_are_coming_soon">Comments are coming soon</string>
+    <string name="couldn_t_confirm_this_with_the">Couldn\'t confirm this with the server. You can try again, </string>
+    <string name="create_a_channel">Create a channel</string>
+    <string name="decisions_of_this_type_cannot_be">Decisions of this type cannot be appealed in the app.</string>
+    <string name="download_new_versions_automatically_while_you">Download new versions automatically while you use the app</string>
+    <string name="enter_your_email_to_sign_in">Enter your email to sign in or sign up</string>
+    <string name="for_all_chats">For all chats</string>
+    <string name="for_this_chat">For this chat</string>
+    <string name="if_someone_is_in_immediate_danger_2">If someone is in immediate danger, please contact </string>
+    <string name="include_the_message_so_we_can">Include the message so we can read it</string>
+    <string name="neveroff_can_t_reach_the_server">NeverOff can\'t reach the server right now. Your messages are safe — </string>
+    <string name="official_help_from_the_neveroff_team">Official help from the NeverOff team</string>
+    <string name="original_message">Original message</string>
+    <string name="posts_in_a_channel_are_visible">Posts in a channel are visible to everyone who opens it, so they are not </string>
+    <string name="private_invite_link">Private invite link</string>
+    <string name="quote_this_if_you_contact_support">Quote this if you contact support.</string>
+    <string name="recent">Recent</string>
+    <string name="reference">Reference</string>
+    <string name="report_this_channel">Report this channel</string>
+    <string name="reports_are_anonymous_the_person_you">Reports are anonymous. The person you are reporting is </string>
+    <string name="same_bubbles_and_physics_as_a">Same bubbles and physics as a real chat, slowed down so you can see them. Swipe for more, or just try dragging a bubble yourself.</string>
+    <string name="sending">Sending…</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="support">@support</string>
+    <string name="tell_us_what_we_got_wrong">Tell us what we got wrong. Someone other than the person </string>
+    <string name="temporary">Temporary</string>
+    <string name="edit_profile_title">Edit profile</string>
+    <string name="label_username">Username</string>
+    <string name="updates">Updates</string>
+    <string name="updates_live_as_you_change_the">Updates live as you change the settings below</string>
+    <string name="what_s_new_2">What\'s New</string>
+    <string name="what_this_affects">What this affects</string>
+    <string name="what_would_you_like_to_happen">What would you like to happen?</string>
+    <string name="your_messages_are_end_to_end">Your messages are end-to-end </string>
 </resources>

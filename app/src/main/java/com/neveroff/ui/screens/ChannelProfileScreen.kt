@@ -258,7 +258,7 @@ fun ChannelProfileScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = "Report this channel",
+                                text = stringResource(R.string.report_this_channel),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
