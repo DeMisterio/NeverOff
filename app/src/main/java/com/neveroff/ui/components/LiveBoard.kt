@@ -203,6 +203,7 @@ fun LiveBoardWindow(
         color = Color.White,
         shadowElevation = 14.dp
     ) {
+      Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header: close on the left, as specified, so the destructive
             // control is never where a thumb rests while drawing. Dragging it
@@ -309,33 +310,31 @@ fun LiveBoardWindow(
                 )
             }
 
-            // Resize arc, bottom-right. Dragging out grows the window and
-            // dragging in shrinks it, always along the diagonal so the ratio
-            // is preserved without the user having to keep it themselves.
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                Box(
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(30.dp)
-                        .clip(RoundedCornerShape(topStart = 30.dp))
-                        .background(Color(0xFFE8E8E8))
-                        .pointerInput(maxWidthPx) {
-                            detectDragGestures { _, drag ->
-                                // Average the two axes: a diagonal drag is the
-                                // gesture, and using only x would make vertical
-                                // movement feel dead.
-                                val delta = (drag.x + drag.y) / 2f
-                                // Damped: a 1:1 mapping makes the corner feel
-                                // twitchy near the collapse threshold, where
-                                // the smallest movements matter most. The
-                                // spring above smooths what is left.
-                                scale = (scale + (delta / maxWidthPx) * 0.85f)
-                                    .coerceIn(0.12f, 1f)
-                            }
-                        }
-                )
-            }
         }
+
+        // Resize arc, hung over the bottom-right corner rather than laid out
+        // as a row beneath the canvas. As a Column child it competed with the
+        // header and canvas for vertical space and was the first thing squeezed
+        // out — so it vanished exactly when the window got small, which is
+        // precisely when it is the only way back. An overlay cannot be squeezed.
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(5.dp)
+                .size(34.dp)
+                .clip(RoundedCornerShape(topStart = 34.dp))
+                .background(Color(0xFFDCDCDC))
+                .pointerInput(maxWidthPx) {
+                    detectDragGestures { _, drag ->
+                        val delta = (drag.x + drag.y) / 2f
+                        // Damped: a 1:1 mapping feels twitchy near the collapse
+                        // threshold, where the smallest movements matter most.
+                        scale = (scale + (delta / maxWidthPx) * 0.85f)
+                            .coerceIn(0.12f, 1f)
+                    }
+                }
+        )
+      }
     }
 }
 

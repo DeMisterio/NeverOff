@@ -2,6 +2,9 @@ package com.neveroff.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -53,6 +56,7 @@ fun BoardCanvas(
     var liveId by remember { mutableStateOf<String?>(null) }
     var livePoints by remember { mutableStateOf<List<LiveBoardSession.Point>>(emptyList()) }
     var lastSentAt by remember { mutableStateOf(0L) }
+    var lastTapAt by remember { mutableStateOf(0L) }
     var canvasSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
     Canvas(
@@ -66,54 +70,99 @@ fun BoardCanvas(
                 translationX = canvasOffset.x
                 translationY = canvasOffset.y
             }
-            // Double tap returns the canvas to square on, which is the only way
-            // back from an awkward rotation without fighting it by hand.
-            .pointerInput(Unit) {
-                detectTapGestures(onDoubleTap = { onResetTransform() })
-            }
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, rotation ->
-                    onTransform(
-                        (canvasScale * zoom).coerceIn(0.5f, 5f),
-                        canvasRotation + rotation,
-                        canvasOffset + pan
-                    )
-                }
-            }
+            // ONE gesture handler, not three.
+            //
+            // Previously this stacked detectTapGestures, detectTransformGestures
+            // and detectDragGestures. detectTransformGestures fires on a single
+            // finger too — it treats a one-pointer drag as a pan — so it
+            // swallowed every stroke and panned the canvas instead. Drawing
+            // never worked, and no amount of Supabase configuration would have
+            // helped, because nothing was ever sent.
+            //
+            // Counting pointers is the only reliable way to tell the two apart:
+            // one finger draws, two or more transform.
             .pointerInput(color, strokeWidth) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        liveId = UUID.randomUUID().toString()
-                        livePoints = listOf(offset.normalise(size))
-                    },
-                    onDrag = { change, _ ->
-                        val id = liveId ?: return@detectDragGestures
-                        livePoints = livePoints + change.position.normalise(size)
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val downTime = System.currentTimeMillis()
+                        var id: String? = UUID.randomUUID().toString()
+                        var pts = listOf(down.position.normalise(size))
+                        var transforming = false
+                        var moved = false
 
-                        // Batch: one broadcast per pointer sample would be a
-                        // hundred messages a second. Every 60 ms keeps the line
-                        // visibly live without flooding the socket.
-                        val now = System.currentTimeMillis()
-                        if (now - lastSentAt > 60) {
-                            lastSentAt = now
-                            onStroke(id, livePoints, false)
+                        liveId = id
+                        livePoints = pts
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.filter { it.pressed }
+                            if (pressed.isEmpty()) break
+
+                            if (pressed.size >= 2) {
+                                // A second finger turns this into a transform.
+                                // Whatever was drawn so far is discarded, so a
+                                // pinch never leaves a stray mark behind.
+                                if (!transforming) {
+                                    transforming = true
+                                    id = null
+                                    pts = emptyList()
+                                    liveId = null
+                                    livePoints = emptyList()
+                                }
+                                val zoom = event.calculateZoom()
+                                val rotation = event.calculateRotation()
+                                val pan = event.calculatePan()
+                                if (zoom != 1f || rotation != 0f || pan != Offset.Zero) {
+                                    onTransform(
+                                        (canvasScale * zoom).coerceIn(0.5f, 5f),
+                                        canvasRotation + rotation,
+                                        canvasOffset + pan
+                                    )
+                                }
+                                event.changes.forEach { it.consume() }
+                            } else if (!transforming) {
+                                val change = pressed[0]
+                                if (change.position != change.previousPosition) moved = true
+                                pts = pts + change.position.normalise(size)
+                                livePoints = pts
+
+                                // Batch: one broadcast per pointer sample would
+                                // be a hundred a second. Every 60 ms keeps the
+                                // line visibly live without flooding the socket.
+                                val now = System.currentTimeMillis()
+                                val strokeId = id
+                                if (strokeId != null && now - lastSentAt > 60) {
+                                    lastSentAt = now
+                                    onStroke(strokeId, pts, false)
+                                }
+                                change.consume()
+                            }
                         }
-                        change.consume()
-                    },
-                    onDragEnd = {
-                        val id = liveId
-                        if (id != null && livePoints.size > 1) onStroke(id, livePoints, true)
-                        liveId = null
-                        livePoints = emptyList()
-                    },
-                    // Cancelled means a second finger arrived and the transform
-                    // detector took the gesture. Drop what was drawn, so a pinch
-                    // never leaves a stray mark behind.
-                    onDragCancel = {
+
+                        val strokeId = id
+                        if (!transforming && strokeId != null && pts.size > 1) {
+                            onStroke(strokeId, pts, true)
+                        } else if (!transforming && !moved &&
+                            System.currentTimeMillis() - downTime < 260
+                        ) {
+                            // A tap that never moved. Two in quick succession
+                            // reset the view — handled here rather than by a
+                            // separate tap detector, because a second detector
+                            // would compete for the same events all over again.
+                            val sinceLastTap = System.currentTimeMillis() - lastTapAt
+                            if (sinceLastTap < 320) {
+                                onResetTransform()
+                                lastTapAt = 0L
+                            } else {
+                                lastTapAt = System.currentTimeMillis()
+                            }
+                        }
+
                         liveId = null
                         livePoints = emptyList()
                     }
-                )
+                }
             }
     ) {
         canvasSize = size
