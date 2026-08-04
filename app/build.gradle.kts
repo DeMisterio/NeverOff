@@ -26,8 +26,13 @@ android {
         // mean. Also unambiguous under UpdateManager.compareVersions, which
         // compares each dotted part numerically — "2.2" would have read as
         // older than the shipped "2.12" and reached nobody.
-        versionCode = 8
-        versionName = "3.0"
+        //
+        // 3.01 fixes registration (it landed on an empty profile), adds OTP
+        // resend, shows console warnings, and puts @support in search. The
+        // leading zero is read as a fraction by compareVersions, so it sorts
+        // above 3.0 and below a future 3.1.
+        versionCode = 9
+        versionName = "3.01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

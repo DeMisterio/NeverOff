@@ -26,6 +26,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -243,6 +244,10 @@ fun AppNavigation(intent: android.content.Intent?) {
         mutableStateOf<com.neveroff.data.remote.EnforcementRepository.Status?>(null)
     }
     var enforcementCheckToken by remember { mutableStateOf(0) }
+    // Action id of a notice the user chose to continue past because it could not
+    // be acknowledged on the server. Deliberately not persisted: an unconfirmed
+    // notice should come back on the next launch.
+    var deferredNoticeActionId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(intent) {
         val cid = intent?.getStringExtra("chat_id")
@@ -517,6 +522,12 @@ fun AppNavigation(intent: android.content.Intent?) {
     LaunchedEffect(sessionStatus, enforcementCheckToken) {
         if (sessionStatus !is SessionStatus.Authenticated) {
             enforcement = null
+            // "banned" renders a spinner while enforcement is null and has no
+            // other way to be refilled, so leaving someone there after the
+            // session dropped strands them on an empty screen with no way out.
+            if (navController.currentDestination?.route == "banned") {
+                navController.navigate("login") { popUpTo(0) }
+            }
             return@LaunchedEffect
         }
 
@@ -860,6 +871,7 @@ fun AppNavigation(intent: android.content.Intent?) {
                 onBack = { navController.popBackStack() },
                 onCreateChannel = { navController.navigate("create_channel") },
                 onChannelSelected = { channelId -> navController.navigate("channel/$channelId") },
+                onOpenSupport = { navController.navigate("support") },
                 onUserSelected = { profile ->
                     scope.launch {
                         try {
@@ -1026,5 +1038,40 @@ fun AppNavigation(intent: android.content.Intent?) {
                 onBack = { navController.popBackStack() }
             )
         }
+    }
+
+    // §4: a warning or a sending restriction. Drawn over the graph rather than
+    // as a route inside it — it applies wherever the user happens to be, and a
+    // route would have to fight the session collectors for the back stack the
+    // way the onboarding screens above would have. MainActivity hosts this in a
+    // Box, so it stacks on top of the NavHost and under the toast host.
+    val notice = enforcement
+    // Observed, not read off navController directly: currentDestination is not
+    // snapshot state, so a plain read here would not recompose when the route
+    // changes and the guard below would go stale.
+    val currentEntry by navController.currentBackStackEntryAsState()
+    if (
+        notice != null &&
+        notice.needsAcknowledgement &&
+        notice.actionId != deferredNoticeActionId &&
+        sessionStatus is SessionStatus.Authenticated &&
+        // The ban screen states its own case; two enforcement screens at once
+        // would just bury it.
+        currentEntry?.destination?.route != "banned"
+    ) {
+        com.neveroff.ui.screens.WarningNoticeScreen(
+            status = notice,
+            onAcknowledged = {
+                // Clear it locally so the overlay goes now, then re-check: the
+                // server is the source of truth for whether it stays gone.
+                enforcement = null
+                enforcementCheckToken++
+            },
+            onDefer = { deferredNoticeActionId = notice.actionId },
+            onOpenSupport = {
+                deferredNoticeActionId = notice.actionId
+                navController.navigate("support/other")
+            }
+        )
     }
 }

@@ -75,6 +75,24 @@ object EnforcementRepository {
         val canAppeal: Boolean
             get() = (reason?.appealable ?: false) &&
                 (appeal?.state == null || appeal.state == "none")
+
+        /**
+         * An action that must be shown but does not lock the app: a warning, or
+         * a restriction that only limits sending.
+         *
+         * Matched as "not active and not access-blocking" rather than on the
+         * literal string "warning" on purpose. The console owns the status
+         * vocabulary and will add to it; matching one exact value would mean a
+         * `final_warning` added next quarter silently shows the user nothing,
+         * which is the failure this property exists to prevent. An actionId is
+         * required because there is nothing to acknowledge without one.
+         */
+        val isNotice: Boolean
+            get() = status != "active" && !blocksAccess && !actionId.isNullOrBlank()
+
+        /** A notice the user has not yet seen and dismissed. */
+        val needsAcknowledgement: Boolean
+            get() = isNotice && acknowledgedAt.isNullOrBlank()
     }
 
     /** The unrestricted default, used whenever we cannot reach the server. */

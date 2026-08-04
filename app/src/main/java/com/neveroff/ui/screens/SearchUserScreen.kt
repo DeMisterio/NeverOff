@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,7 +45,8 @@ fun SearchUserScreen(
     onBack: () -> Unit,
     onUserSelected: (Profile) -> Unit,
     onCreateChannel: () -> Unit = {},
-    onChannelSelected: (String) -> Unit = {}
+    onChannelSelected: (String) -> Unit = {},
+    onOpenSupport: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -152,6 +155,15 @@ fun SearchUserScreen(
                 )
             )
 
+            // @support is not a row in `profiles` — it is an RPC-backed surface —
+            // so no amount of typing "@support" will ever turn it up in the
+            // results below. It is pinned here instead: this screen is where
+            // people come to look for it, and until now the only way to reach it
+            // was to be suspended first.
+            if (searchQuery.isBlank() || matchesSupportQuery(searchQuery)) {
+                SupportListItem(onClick = onOpenSupport)
+            }
+
             // Sits directly under the search field: looking for someone and
             // starting your own broadcast are the two things this screen is for.
             CreateChannelBanner(onClick = onCreateChannel)
@@ -259,6 +271,87 @@ fun SearchUserScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Does what the user typed look like they are hunting for support?
+ *
+ * Prefix-matched so it appears from the first letter or two rather than only on
+ * an exact spelling, and matched in both app languages: someone typing
+ * "поддержка" is looking for exactly the same thing.
+ */
+private fun matchesSupportQuery(query: String): Boolean {
+    val clean = query.removePrefix("@").trim().lowercase()
+    if (clean.isEmpty()) return true
+    return listOf("support", "help", "поддержка", "помощь").any { it.startsWith(clean) }
+}
+
+/**
+ * The pinned @support row. Styled as an official entry rather than as another
+ * user: it is a service, and looking like a person someone could impersonate is
+ * the one thing a support handle must not do.
+ */
+@Composable
+private fun SupportListItem(onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 8.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.SupportAgent,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "@support",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        Icons.Default.Verified,
+                        contentDescription = "Official",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Official help from the NeverOff team",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+            }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
         }
     }
 }
