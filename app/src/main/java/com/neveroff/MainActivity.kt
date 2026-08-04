@@ -357,6 +357,24 @@ fun AppNavigation(intent: android.content.Intent?) {
                 val currentUserId = status.session.user?.id ?: SupabaseClient.client.auth.currentUserOrNull()?.id
                 if (currentUserId != null) {
                     com.neveroff.util.SecurePrefs.putString(prefs, "my_user_id", currentUserId)
+
+                    // Sign-out now keeps the identity key so that signing back
+                    // into the same account can still read its history. This is
+                    // the other half of that: a *different* account signing in
+                    // on this device must not inherit the previous one's key or
+                    // its decrypted message cache.
+                    if (!com.neveroff.crypto.CryptoManager.canReuseIdentityFor(currentUserId)) {
+                        runCatching { com.neveroff.crypto.CryptoManager.resetKeys(context) }
+                        runCatching { AppDatabase.resetInstance(context) }
+                    }
+                    // Adopts a pre-existing key that has no owner recorded, so
+                    // users upgrading into this build keep their history rather
+                    // than losing it to a bookkeeping gap.
+                    com.neveroff.crypto.CryptoManager.bindKeyPairToUser(currentUserId)
+
+                    // The server's copy of the public key is reconciled against
+                    // the local one further down this same block, so a
+                    // regenerated pair is republished there rather than here.
                 }
 
                 // Connect to Realtime WebSocket once per session
@@ -522,6 +540,9 @@ fun AppNavigation(intent: android.content.Intent?) {
     LaunchedEffect(sessionStatus, enforcementCheckToken) {
         if (sessionStatus !is SessionStatus.Authenticated) {
             enforcement = null
+            // Restrictions are per-account. Leaving them in place across a sign
+            // out would apply one person's penalties to whoever signs in next.
+            com.neveroff.data.remote.EnforcementState.reset()
             // "banned" renders a spinner while enforcement is null and has no
             // other way to be refilled, so leaving someone there after the
             // session dropped strands them on an empty screen with no way out.
@@ -533,6 +554,8 @@ fun AppNavigation(intent: android.content.Intent?) {
 
         val status = com.neveroff.data.remote.EnforcementRepository.fetchStatus()
         enforcement = status
+        // Publish to the shared holder so every screen can grey out what it must.
+        com.neveroff.data.remote.EnforcementState.update(status)
 
         val route = navController.currentDestination?.route
         if (status != null && status.blocksAccess) {
@@ -595,8 +618,14 @@ fun AppNavigation(intent: android.content.Intent?) {
                                     "neveroff_prefs", android.content.Context.MODE_PRIVATE
                                 ).edit().clear().apply()
                             }
-                            runCatching { com.neveroff.crypto.CryptoManager.resetKeys(context) }
-                            runCatching { AppDatabase.resetInstance(context) }
+                            // Keeps the identity key: see signOutPreservingIdentity.
+                            // Destroying it here made every past message in every
+                            // chat unreadable on the next sign-in. The local
+                            // database is left in place for the same reason —
+                            // it is readable only with that key anyway, and
+                            // dropping it forced a refetch that lost message
+                            // ordering and timestamps.
+                            runCatching { com.neveroff.crypto.CryptoManager.signOutPreservingIdentity() }
                             myProfile = null
                             enforcement = null
                             navController.navigate("login") { popUpTo(0) { inclusive = true } }
@@ -851,12 +880,21 @@ fun AppNavigation(intent: android.content.Intent?) {
                             e.printStackTrace()
                         }
                         try {
-                            com.neveroff.crypto.CryptoManager.resetKeys(context)
+                            // Not resetKeys: that destroys the EC private key,
+                            // and with it the only means of reading this
+                            // account's history. Signing back in then showed
+                            // every message as "[Encrypted message]".
+                            com.neveroff.crypto.CryptoManager.signOutPreservingIdentity()
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                         try {
-                            AppDatabase.resetInstance(context)
+                            // Left in place deliberately. It is SQLCipher-encrypted
+                            // with a key only this account can derive, and keeping
+                            // it means the history does not have to be refetched —
+                            // the refetch is what collapsed every timestamp to
+                            // "now" and reordered chats by sender.
+                            Unit
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

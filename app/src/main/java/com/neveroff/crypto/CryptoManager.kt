@@ -28,6 +28,8 @@ import java.security.spec.ECGenParameterSpec
  */
 object CryptoManager {
     private const val MASTER_KEY_ALIAS = "neveroff_master_aes_key"
+    /** Which account the stored EC identity key belongs to. */
+    private const val KEY_OWNER_UID = "ec_owner_uid"
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
     private const val PREFS_NAME = "neveroff_crypto_prefs"
     private const val AUTH_KEY_CACHE_MAX = 50
@@ -324,8 +326,72 @@ object CryptoManager {
     }
     
     /**
-     * Wipes the identity/DB keys on logout: deletes the Keystore master key alias,
+     * Records which account the stored identity key belongs to.
+     *
+     * Without this there is no way to tell "signed back into the same account"
+     * from "handed the phone to someone else", and the two need opposite
+     * treatment: the first must keep the key, the second must destroy it.
+     */
+    @Synchronized
+    fun bindKeyPairToUser(userId: String) {
+        if (!ensurePrefsInitialized()) return
+        prefs.edit().putString(KEY_OWNER_UID, userId).apply()
+    }
+
+    /** The account the stored identity key was issued to, if any. */
+    @Synchronized
+    fun keyPairOwner(): String? =
+        if (ensurePrefsInitialized()) prefs.getString(KEY_OWNER_UID, null) else null
+
+    /**
+     * Sign-out that keeps the identity key.
+     *
+     * The EC private key is not session state — it is the only thing on earth
+     * that can read this account's message history. Deleting it on sign-out
+     * meant signing back in generated a fresh key pair, and every message ever
+     * encrypted to the old one became permanently unreadable: the "[Encrypted
+     * message]" wall. ECDH is symmetric, so this took out the user's own sent
+     * messages too, which is why the whole history went at once.
+     *
+     * The local database key is kept for the same reason — it is derived from
+     * the same master key, so wiping it forced a full refetch of every message
+     * from the server, which is what flattened the timestamps and the ordering.
+     *
+     * What is cleared is the per-session derived material: the shared-secret
+     * cache is per-conversation and cheap to rebuild, and keeping it across
+     * accounts would be wrong.
+     *
+     * [resetKeys] remains for the cases that genuinely need a clean device:
+     * signing in as a different account, or an explicit "forget this device".
+     */
+    @Synchronized
+    fun signOutPreservingIdentity() {
+        synchronized(authKeyCache) { authKeyCache.clear() }
+    }
+
+    /**
+     * Whether a sign-in as [userId] can keep the stored identity key.
+     *
+     * Returns true when the key belongs to this account (or predates the owner
+     * being recorded, in which case it is adopted rather than destroyed —
+     * upgrading users must not lose their history to a bookkeeping gap).
+     */
+    @Synchronized
+    fun canReuseIdentityFor(userId: String): Boolean {
+        if (!ensurePrefsInitialized()) return false
+        val hasKey = prefs.getString("ec_priv_enc", null) != null
+        if (!hasKey) return false
+        val owner = prefs.getString(KEY_OWNER_UID, null)
+        return owner == null || owner == userId
+    }
+
+    /**
+     * Wipes the identity/DB keys: deletes the Keystore master key alias,
      * clears the encrypted key blobs from SharedPreferences, and resets in-memory caches.
+     *
+     * Destroys the ability to read this account's message history. Call it when
+     * that is the intent — a different account signing in, or an explicit device
+     * wipe — never as part of an ordinary sign-out.
      */
     @Synchronized
     fun resetKeys(context: Context) {

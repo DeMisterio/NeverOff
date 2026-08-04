@@ -22,4 +22,41 @@
     <string name="confirm_delete_messages">Do you want to delete these messages?</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_delete">Delete</string>
+
+    <!-- Account restrictions applied from the moderation console.
+         Shadow restriction is deliberately absent: naming it to the user would
+         defeat the mechanism, which exists so behaviour stays unchanged. -->
+    <string name="restriction_title">Account restrictions</string>
+    <string name="restriction_none">No restrictions are in place on your account.</string>
+    <string name="restriction_active_header">These limits currently apply to your account</string>
+    <string name="restriction_until">Until %1$s</string>
+    <string name="restriction_permanent">No end date</string>
+    <string name="restriction_blocked_toast">%1$s is unavailable while your account is restricted.</string>
+    <string name="restriction_sending_banner">You cannot send messages while your account is restricted.</string>
+    <string name="restriction_see_details">See details</string>
+    <string name="restriction_reason">Reason</string>
+    <string name="restriction_case_ref">Case reference</string>
+
+    <!-- Feature names, matching the console's catalogue one-for-one. -->
+    <string name="feature_send_message">Sending messages</string>
+    <string name="feature_send_voice_note">Sending voice notes</string>
+    <string name="feature_send_image">Sending images</string>
+    <string name="feature_send_video">Sending videos</string>
+    <string name="feature_create_group">Creating groups</string>
+    <string name="feature_create_channel">Creating channels</string>
+    <string name="feature_subscribe_channel">Subscribing to channels</string>
+    <string name="feature_react_to_post">Reacting to posts</string>
+    <string name="feature_search_users">Searching for people</string>
+    <string name="feature_edit_profile">Editing your profile</string>
+    <string name="feature_change_wallpaper">Changing the chat wallpaper</string>
+    <string name="feature_schedule_message">Scheduling messages</string>
+
+    <!-- Forwarding a channel post into a chat. -->
+    <string name="action_forward">Forward</string>
+    <string name="forward_to">Forward to</string>
+    <string name="forward_from_channel">From %1$s</string>
+    <string name="forward_open_channel">Open channel</string>
+    <string name="forward_sent">Forwarded</string>
+    <string name="forward_failed">Couldn\'t forward that post</string>
+    <string name="forward_search_hint">Search chats…</string>
 </resources>

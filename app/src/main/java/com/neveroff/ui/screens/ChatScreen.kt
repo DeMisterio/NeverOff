@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.neveroff.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -214,6 +216,23 @@ fun ChatScreen(
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showProfileId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAttachMenu by rememberSaveable { mutableStateOf(false) }
+
+    // Restrictions issued from the moderation console. A mute arrives as
+    // blocks_sending rather than as a feature list, and EnforcementState folds
+    // both into the same answer, so the composer has one flag to consult rather
+    // than two that have to be kept in agreement.
+    val sendBlocked = com.neveroff.ui.components.isFeatureRestricted(
+        com.neveroff.data.remote.EnforcementState.Feature.SEND_MESSAGE
+    )
+    val voiceBlocked = sendBlocked || com.neveroff.ui.components.isFeatureRestricted(
+        com.neveroff.data.remote.EnforcementState.Feature.SEND_VOICE_NOTE
+    )
+    val videoBlocked = sendBlocked || com.neveroff.ui.components.isFeatureRestricted(
+        com.neveroff.data.remote.EnforcementState.Feature.SEND_VIDEO
+    )
+    val imageBlocked = sendBlocked || com.neveroff.ui.components.isFeatureRestricted(
+        com.neveroff.data.remote.EnforcementState.Feature.SEND_IMAGE
+    )
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -500,6 +519,13 @@ fun ChatScreen(
                         }
                     }
                 }
+                // Standing condition, so a banner rather than a dialog — a dialog
+                // would have to be dismissed every time the chat is reopened.
+                if (sendBlocked) {
+                    com.neveroff.ui.components.SendingRestrictedBanner(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(8.dp)
                         .shadow(4.dp, RoundedCornerShape(24.dp), ambientColor = Color.Black.copy(alpha = 0.18f), spotColor = Color.Black.copy(alpha = 0.18f))
@@ -511,8 +537,21 @@ fun ChatScreen(
                 ) {
                     Box {
                         BounceIconButton(
-                            onClick = { showAttachMenu = true },
-                            modifier = Modifier.padding(end = 8.dp)
+                            onClick = {
+                                if (imageBlocked && videoBlocked) {
+                                    com.neveroff.ui.components.AppToast.show(
+                                        context.getString(
+                                            R.string.restriction_blocked_toast,
+                                            context.getString(R.string.feature_send_image)
+                                        )
+                                    )
+                                } else {
+                                    showAttachMenu = true
+                                }
+                            },
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .alpha(if (imageBlocked && videoBlocked) 0.38f else 1f)
                         ) { Icon(Icons.Default.Add, "Attach") }
                         DropdownMenu(
                             expanded = showAttachMenu,
@@ -553,7 +592,17 @@ fun ChatScreen(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = Color.Transparent
                             ),
-                            placeholder = { Text("Message") },
+                            placeholder = {
+                                Text(
+                                    if (sendBlocked) {
+                                        stringResource(R.string.restriction_sending_banner)
+                                    } else "Message"
+                                )
+                            },
+                            // Material greys a disabled field itself, which is
+                            // exactly the affordance wanted: visibly present,
+                            // visibly unusable, no focus, no keyboard.
+                            enabled = !sendBlocked,
                             singleLine = false,
                             maxLines = 4
                         )
@@ -563,7 +612,7 @@ fun ChatScreen(
                         RecordButton(
                             isTextBlank = inputText.isBlank(),
                             isLocked = isLockedMode,
-                            sendEnabled = !isSending,
+                            sendEnabled = !isSending && !sendBlocked,
                             buttonColor = if (isTempMode) Color(0xFFFF5722) else if (currentTheme.name == "Default") MaterialTheme.colorScheme.primary else currentTheme.iconTint,
                             onSendText = {
                                 var finalMsg = inputText
@@ -579,7 +628,29 @@ fun ChatScreen(
                                 showSendOptionsMenu = true
                             },
                             onStartRecording = { mode ->
-                                if (mode == RecordMode.AUDIO) {
+                                // Checked here as well as on the button: a long
+                                // press can begin a recording without the send
+                                // path being touched, so gating sendEnabled
+                                // alone would leave voice notes wide open.
+                                val blockedFeature = when {
+                                    mode == RecordMode.AUDIO && voiceBlocked ->
+                                        com.neveroff.data.remote.EnforcementState.Feature.SEND_VOICE_NOTE
+                                    mode != RecordMode.AUDIO && videoBlocked ->
+                                        com.neveroff.data.remote.EnforcementState.Feature.SEND_VIDEO
+                                    else -> null
+                                }
+                                if (blockedFeature != null) {
+                                    com.neveroff.ui.components.AppToast.show(
+                                        context.getString(
+                                            R.string.restriction_blocked_toast,
+                                            context.getString(
+                                                if (blockedFeature == com.neveroff.data.remote.EnforcementState.Feature.SEND_VOICE_NOTE)
+                                                    R.string.feature_send_voice_note
+                                                else R.string.feature_send_video
+                                            )
+                                        )
+                                    )
+                                } else if (mode == RecordMode.AUDIO) {
                                     if (audioHelper.startRecording() != null) {
                                         isRecordingAudio = true
                                     } else {

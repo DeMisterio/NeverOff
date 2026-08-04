@@ -63,6 +63,13 @@ object AppLanguage {
             .putBoolean(KEY_CHOSEN, true)
             .apply()
         _current.value = language
+
+        // The composition reads its locale from SettingsManager, not from here,
+        // so writing only to this store left the picker cosmetic: choosing
+        // Russian on first launch recorded the choice and then rendered the
+        // entire app in English. One choice, one destination — Settings' own
+        // language control writes to the same place, so the two cannot drift.
+        SettingsManager.setLanguage(language.code)
     }
 
     fun get(context: Context): Language =

@@ -22,4 +22,39 @@
     <string name="confirm_delete_messages">Вы действительно хотите удалить эти сообщения у всех?</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_delete">Удалить</string>
+
+    <!-- Ограничения аккаунта, назначенные из консоли модерации.
+         Теневое ограничение здесь намеренно отсутствует. -->
+    <string name="restriction_title">Ограничения аккаунта</string>
+    <string name="restriction_none">На ваш аккаунт не наложено ограничений.</string>
+    <string name="restriction_active_header">Сейчас к вашему аккаунту применены эти ограничения</string>
+    <string name="restriction_until">До %1$s</string>
+    <string name="restriction_permanent">Без срока окончания</string>
+    <string name="restriction_blocked_toast">%1$s недоступно, пока действует ограничение.</string>
+    <string name="restriction_sending_banner">Вы не можете отправлять сообщения, пока действует ограничение.</string>
+    <string name="restriction_see_details">Подробнее</string>
+    <string name="restriction_reason">Причина</string>
+    <string name="restriction_case_ref">Номер обращения</string>
+
+    <string name="feature_send_message">Отправка сообщений</string>
+    <string name="feature_send_voice_note">Отправка голосовых сообщений</string>
+    <string name="feature_send_image">Отправка изображений</string>
+    <string name="feature_send_video">Отправка видео</string>
+    <string name="feature_create_group">Создание групп</string>
+    <string name="feature_create_channel">Создание каналов</string>
+    <string name="feature_subscribe_channel">Подписка на каналы</string>
+    <string name="feature_react_to_post">Реакции на посты</string>
+    <string name="feature_search_users">Поиск людей</string>
+    <string name="feature_edit_profile">Редактирование профиля</string>
+    <string name="feature_change_wallpaper">Смена фона чата</string>
+    <string name="feature_schedule_message">Отложенные сообщения</string>
+
+    <!-- Пересылка поста канала в чат. -->
+    <string name="action_forward">Переслать</string>
+    <string name="forward_to">Переслать в</string>
+    <string name="forward_from_channel">Из %1$s</string>
+    <string name="forward_open_channel">Открыть канал</string>
+    <string name="forward_sent">Переслано</string>
+    <string name="forward_failed">Не удалось переслать пост</string>
+    <string name="forward_search_hint">Поиск чатов…</string>
 </resources>
