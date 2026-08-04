@@ -49,9 +49,13 @@ class ChatListViewModel(
         val savedMessages = ChatItemUiModel(
             chatId = com.neveroff.util.Constants.SAVED_MESSAGES_ID,
             otherUserId = myId,
-            otherUserName = "Favorites",
+            // Blank on purpose. A ViewModel has no locale, so naming this row
+            // here would bake one language into data the view then renders
+            // verbatim — which is why Favorites stayed English while the rest
+            // of the app switched to Russian. The view resolves both.
+            otherUserName = "",
             otherPubKey = "",
-            lastMessage = "My Notes and Messages",
+            lastMessage = "",
             unreadCount = 0,
             isLocked = savedEntity?.isLocked ?: false,
             pinHash = savedEntity?.pinHash,
@@ -64,7 +68,10 @@ class ChatListViewModel(
                 otherUserId = entity.otherUserId,
                 otherUserName = entity.customName ?: entity.otherUserName,
                 otherPubKey = entity.otherPubKey,
-                lastMessage = entity.lastMessage ?: "No messages yet",
+                // Empty, not English prose: the view knows the locale and
+                // this does not. Substituting a wording here is what left
+                // "No messages yet" untranslated on a Russian device.
+                lastMessage = entity.lastMessage.orEmpty(),
                 unreadCount = entity.unreadCount,
                 isLocked = entity.isLocked,
                 pinHash = entity.pinHash,

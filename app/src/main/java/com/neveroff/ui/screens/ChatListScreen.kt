@@ -56,7 +56,8 @@ data class ChatItemUiModel(
     val otherUserId: String,
     val otherUserName: String,
     val otherPubKey: String,
-    val lastMessage: String = "No messages yet",
+    /** Blank means "nothing yet" — the view supplies the wording in the right language. */
+    val lastMessage: String = "",
     val unreadCount: Int = 0,
     val isLocked: Boolean = false,
     val pinHash: String? = null,
@@ -900,7 +901,10 @@ fun ChannelListItem(
 @Composable
 fun ChatListItem(chat: ChatItemUiModel, isOnline: Boolean, onClick: () -> Unit, onAvatarClick: () -> Unit) {
     val isSavedMessages = chat.chatId == com.neveroff.util.Constants.SAVED_MESSAGES_ID
-    val displayName = if (isSavedMessages) "Favorites" else chat.otherUserName
+    // Resolved here rather than stored: this is the only layer that knows the
+    // current locale.
+    val displayName = if (isSavedMessages) stringResource(R.string.favorites)
+                      else chat.otherUserName
     val isUnread = chat.unreadCount > 0
 
     Surface(
@@ -1008,7 +1012,13 @@ fun ChatListItem(chat: ChatItemUiModel, isOnline: Boolean, onClick: () -> Unit, 
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isUnread) "${chat.lastMessage}..." else chat.lastMessage,
+                    text = when {
+                        isSavedMessages && chat.lastMessage.isBlank() ->
+                            stringResource(R.string.saved_messages_subtitle)
+                        chat.lastMessage.isBlank() -> stringResource(R.string.no_messages)
+                        isUnread -> "${chat.lastMessage}..."
+                        else -> chat.lastMessage
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isUnread) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (isUnread) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
