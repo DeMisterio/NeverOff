@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.neveroff.R
 import com.neveroff.data.model.SocialPlatform
+import com.neveroff.data.remote.EnforcementState
 import com.neveroff.util.bounceClick
 
 /**
@@ -171,10 +172,33 @@ fun SubscribeButton(
             animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
             label = "tickScale"
         )
+        // Gated inside the component rather than at each call site: the button
+        // appears on the channel screen, the profile screen and the link card,
+        // and a restriction that only holds on two of the three is not a
+        // restriction.
+        val subscribeBlocked = isFeatureRestricted(EnforcementState.Feature.SUBSCRIBE_CHANNEL)
+        val subscribeContext = androidx.compose.ui.platform.LocalContext.current
+        val blockedLabel = androidx.compose.ui.res.stringResource(
+            com.neveroff.R.string.feature_subscribe_channel
+        )
         Surface(
             shape = CircleShape,
-            color = if (justSubscribed) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.bounceClick { if (!justSubscribed) onSubscribe() }
+            color = when {
+                justSubscribed -> Color(0xFF4CAF50)
+                subscribeBlocked -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                else -> MaterialTheme.colorScheme.primary
+            },
+            modifier = Modifier.bounceClick {
+                when {
+                    justSubscribed -> Unit
+                    subscribeBlocked -> AppToast.show(
+                        subscribeContext.getString(
+                            com.neveroff.R.string.restriction_blocked_toast, blockedLabel
+                        )
+                    )
+                    else -> onSubscribe()
+                }
+            }
         ) {
             Row(
                 modifier = Modifier.padding(

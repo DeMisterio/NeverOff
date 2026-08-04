@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -169,17 +170,38 @@ private fun MainSettingsCategory(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // What the moderation console currently has applied to this account.
+        // Renders nothing when there is nothing to say, so it costs the
+        // overwhelming majority of users an empty item and no more. Placed
+        // first because a greyed-out control elsewhere is only fair if the
+        // explanation is somewhere obvious.
+        item { com.neveroff.ui.components.AccountRestrictionsCard() }
+
         // Profile Card
         item {
+            val editBlocked = com.neveroff.ui.components.isFeatureRestricted(
+                com.neveroff.data.remote.EnforcementState.Feature.EDIT_PROFILE
+            )
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onEditProfile() },
+                    .alpha(if (editBlocked) 0.38f else 1f)
+                    .clickable {
+                        if (editBlocked) {
+                            com.neveroff.ui.components.AppToast.show(
+                                context.getString(
+                                    R.string.restriction_blocked_toast,
+                                    context.getString(R.string.feature_edit_profile)
+                                )
+                            )
+                        } else onEditProfile()
+                    },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -360,9 +382,12 @@ private fun SettingsNavigationRow(
 
 /** Consistent elevated card wrapper used for grouped settings controls (switches, sliders, checkboxes). */
 @Composable
-private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+private fun SettingsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -374,6 +399,7 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
+    val settingsContext = LocalContext.current
     val themePref by SettingsManager.themeFlow.collectAsState()
     val textSize by SettingsManager.bubbleTextSizeFlow.collectAsState()
     val myBubbleColor by SettingsManager.myBubbleColorFlow.collectAsState()
@@ -450,7 +476,12 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
 
         // Chat Theme
         item {
-            SettingsCard {
+            val wallpaperBlocked = com.neveroff.ui.components.isFeatureRestricted(
+                com.neveroff.data.remote.EnforcementState.Feature.CHANGE_WALLPAPER
+            )
+            SettingsCard(
+                modifier = Modifier.alpha(if (wallpaperBlocked) 0.38f else 1f)
+            ) {
                 Text("Chat Wallpaper / Theme", style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = "For all chats",
@@ -467,7 +498,19 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
                             androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surfaceVariant)
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { SettingsManager.setChatTheme(t.name) }) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable {
+                                if (wallpaperBlocked) {
+                                    com.neveroff.ui.components.AppToast.show(
+                                        settingsContext.getString(
+                                            R.string.restriction_blocked_toast,
+                                            settingsContext.getString(R.string.feature_change_wallpaper)
+                                        )
+                                    )
+                                } else SettingsManager.setChatTheme(t.name)
+                            }
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(60.dp, 80.dp)

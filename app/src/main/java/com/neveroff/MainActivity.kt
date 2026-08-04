@@ -907,7 +907,23 @@ fun AppNavigation(intent: android.content.Intent?) {
         composable("search_users") {
             SearchUserScreen(
                 onBack = { navController.popBackStack() },
-                onCreateChannel = { navController.navigate("create_channel") },
+                onCreateChannel = {
+                    // Blocked at the navigation edge rather than inside the
+                    // create screen: letting someone fill in a name and an
+                    // avatar before telling them they cannot publish is a
+                    // worse experience than not opening the screen.
+                    if (com.neveroff.data.remote.EnforcementState.isRestricted(
+                            com.neveroff.data.remote.EnforcementState.Feature.CREATE_CHANNEL
+                        )
+                    ) {
+                        com.neveroff.ui.components.AppToast.show(
+                            context.getString(
+                                com.neveroff.R.string.restriction_blocked_toast,
+                                context.getString(com.neveroff.R.string.feature_create_channel)
+                            )
+                        )
+                    } else navController.navigate("create_channel")
+                },
                 onChannelSelected = { channelId -> navController.navigate("channel/$channelId") },
                 onOpenSupport = { navController.navigate("support") },
                 onUserSelected = { profile ->

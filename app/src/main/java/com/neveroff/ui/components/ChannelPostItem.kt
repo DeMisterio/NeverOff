@@ -59,6 +59,35 @@ fun ChannelPostItem(
     val counts = remember(post.reactionCounts) { decodeReactionCounts(post.reactionCounts) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Reacting is gated here rather than at each call site: reactions are
+    // reachable from the tap row, the picker and a double tap on the bubble,
+    // and a restriction honoured by two of the three is not a restriction.
+    val reactBlocked = isFeatureRestricted(
+        com.neveroff.data.remote.EnforcementState.Feature.REACT_TO_POST
+    )
+    val reactContext = androidx.compose.ui.platform.LocalContext.current
+    val reactBlockedLabel = androidx.compose.ui.res.stringResource(
+        com.neveroff.R.string.feature_react_to_post
+    )
+    val guardedReact: (String) -> Unit = { emoji ->
+        if (reactBlocked) {
+            AppToast.show(
+                reactContext.getString(
+                    com.neveroff.R.string.restriction_blocked_toast, reactBlockedLabel
+                )
+            )
+        } else onReact(emoji)
+    }
+    val guardedOpenPicker: () -> Unit = {
+        if (reactBlocked) {
+            AppToast.show(
+                reactContext.getString(
+                    com.neveroff.R.string.restriction_blocked_toast, reactBlockedLabel
+                )
+            )
+        } else onOpenReactionPicker()
+    }
+
     // A heart that pops on double tap, the way a "like" should feel.
     var heartBurst by remember { mutableStateOf(false) }
     val burstScale by animateFloatAsState(
@@ -89,7 +118,7 @@ fun ChannelPostItem(
                             }
                             if (emoji != null) {
                                 heartBurst = true
-                                onReact(emoji)
+                                guardedReact(emoji)
                             }
                         },
                         onLongPress = { if (isOwner) showDeleteDialog = true }
@@ -166,8 +195,8 @@ fun ChannelPostItem(
                     allowedReactions = allowedReactions,
                     counts = counts,
                     myReaction = post.myReaction,
-                    onReact = onReact,
-                    onOpenPicker = onOpenReactionPicker
+                    onReact = guardedReact,
+                    onOpenPicker = guardedOpenPicker
                 )
             }
         }

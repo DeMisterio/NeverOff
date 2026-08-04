@@ -134,16 +134,34 @@ fun SearchUserScreen(
                 .padding(padding)
         ) {
             // Search Input
+            val searchBlocked = com.neveroff.ui.components.isFeatureRestricted(
+                com.neveroff.data.remote.EnforcementState.Feature.SEARCH_USERS
+            )
+            if (searchBlocked) {
+                com.neveroff.ui.components.AccountRestrictionsCard(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { 
+                onValueChange = {
                     searchQuery = it
                     performSearch(it)
                 },
+                enabled = !searchBlocked,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text(stringResource(R.string.hint_search)) },
+                placeholder = {
+                    Text(
+                        if (searchBlocked) {
+                            stringResource(
+                                R.string.restriction_blocked_toast,
+                                stringResource(R.string.feature_search_users)
+                            )
+                        } else stringResource(R.string.hint_search)
+                    )
+                },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
