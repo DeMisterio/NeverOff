@@ -1,6 +1,9 @@
 package com.neveroff.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -106,34 +109,75 @@ fun LiveBoardWindow(
     val maxWidthPx = (screenWidthPx - 2 * marginPx).coerceAtLeast(1f)
 
     var scale by rememberSaveable { mutableStateOf(1f) }
+
+    // Where the window sits, in pixels from the top-left of the overlay. Drag
+    // the header to move it; both the window and the collapsed bubble share
+    // this, so collapsing does not teleport it back to a default corner.
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+
+    // Everything visible is animated rather than set directly, which is what
+    // makes resizing read as elastic instead of as a value jumping between
+    // frames. Low stiffness with slight bounce is the "settles into place"
+    // feel rather than a mechanical ease.
+    val animatedScale by animateFloatAsState(
+        targetValue = scale,
+        animationSpec = spring(
+            dampingRatio = 0.72f,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "boardScale"
+    )
+    val animatedX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMedium),
+        label = "boardX"
+    )
+    val animatedY by animateFloatAsState(
+        targetValue = offsetY,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMedium),
+        label = "boardY"
+    )
+
     val collapsed = scale <= COLLAPSE_AT
 
     if (collapsed) {
-        // Rolled into a bubble. Tapping restores it to full size — there is no
-        // way to drag it back open, because at this size the resize handle
-        // would be smaller than a fingertip.
-        Surface(
+        // Rolled into a bubble, and draggable in its own right: a bubble
+        // pinned to one spot would sit over whatever happens to be there.
+        // Tapping restores it — there is no way to drag it back open, because
+        // at this size the resize handle would be smaller than a fingertip.
+        Box(
             modifier = modifier
+                .offset { IntOffset(animatedX.roundToInt(), animatedY.roundToInt()) }
                 .padding(12.dp)
                 .size(58.dp)
-                .clickable { scale = 1f },
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp
+                .pointerInput(Unit) {
+                    detectDragGestures { _, drag ->
+                        offsetX += drag.x
+                        offsetY += drag.y
+                    }
+                }
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = stringResource(R.string.board_title),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            Surface(
+                modifier = Modifier.fillMaxSize().clickable { scale = 1f },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                tonalElevation = 6.dp,
+                shadowElevation = 10.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.board_title),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
         return
     }
 
-    val widthPx = maxWidthPx * scale
+    val widthPx = maxWidthPx * animatedScale
     val widthDp = with(density) { widthPx.toDp() }
     val heightDp = widthDp * BOARD_RATIO
 
@@ -147,18 +191,32 @@ fun LiveBoardWindow(
     var canvasOffset by remember { mutableStateOf(Offset.Zero) }
 
     Surface(
-        modifier = modifier.size(width = widthDp, height = heightDp),
+        modifier = modifier
+            .offset { IntOffset(animatedX.roundToInt(), animatedY.roundToInt()) }
+            .size(width = widthDp, height = heightDp),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        shadowElevation = 12.dp
+        // White, not the theme surface: the canvas is white, and a tinted frame
+        // around a white page makes the page look like a hole rather than like
+        // paper. It also keeps the board identical in light, dark and black
+        // themes, so a drawing looks the same to both people whatever either
+        // has chosen.
+        color = Color.White,
+        shadowElevation = 14.dp
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header: close on the left, as specified, so the destructive
-            // control is never where a thumb rests while drawing.
+            // control is never where a thumb rests while drawing. Dragging it
+            // moves the window — the whole surface cannot be the handle,
+            // because that is where the drawing happens.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        detectDragGestures { _, drag ->
+                            offsetX += drag.x
+                            offsetY += drag.y
+                        }
+                    }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -182,7 +240,10 @@ fun LiveBoardWindow(
                     Text(
                         stringResource(R.string.board_title),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        // Explicit dark text: the frame is always white, so
+                        // theme colours would render invisible in dark mode.
+                        color = Color(0xFF1A1A1A)
                     )
                     Text(
                         stringResource(
@@ -190,7 +251,7 @@ fun LiveBoardWindow(
                             else R.string.board_waiting
                         ),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF6B6B6B)
                     )
                 }
                 Box(
@@ -203,7 +264,7 @@ fun LiveBoardWindow(
                     Icon(
                         Icons.Filled.Delete,
                         contentDescription = stringResource(R.string.board_clear),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = Color(0xFF6B6B6B),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -257,14 +318,19 @@ fun LiveBoardWindow(
                         .padding(6.dp)
                         .size(30.dp)
                         .clip(RoundedCornerShape(topStart = 30.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(Color(0xFFE8E8E8))
                         .pointerInput(maxWidthPx) {
                             detectDragGestures { _, drag ->
                                 // Average the two axes: a diagonal drag is the
                                 // gesture, and using only x would make vertical
                                 // movement feel dead.
                                 val delta = (drag.x + drag.y) / 2f
-                                scale = (scale + delta / maxWidthPx).coerceIn(0.15f, 1f)
+                                // Damped: a 1:1 mapping makes the corner feel
+                                // twitchy near the collapse threshold, where
+                                // the smallest movements matter most. The
+                                // spring above smooths what is left.
+                                scale = (scale + (delta / maxWidthPx) * 0.85f)
+                                    .coerceIn(0.12f, 1f)
                             }
                         }
                 )

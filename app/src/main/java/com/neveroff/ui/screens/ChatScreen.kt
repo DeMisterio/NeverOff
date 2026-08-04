@@ -377,17 +377,6 @@ fun ChatScreen(
     val hasIncomingTemporaryMessage = uiMessages.any { it.isTemp && !it.isMine }
     com.neveroff.ui.components.SecureScreen(active = hasIncomingTemporaryMessage)
 
-    // The board floats over the whole chat rather than sitting inside the
-    // message list, so it stays put while the conversation scrolls underneath.
-    // It draws nothing until somebody opens or is invited to one.
-    com.neveroff.ui.components.LiveBoardHost(
-        chatId = chatId,
-        myId = myId,
-        authKey = authKey,
-        partnerName = finalRemoteUserName,
-        startRequested = startBoardRequested,
-        onStartHandled = { startBoardRequested = false }
-    )
 
     val onlineUsersFromPresence by com.neveroff.data.remote.PresenceManager.onlineUsers.collectAsState()
 
@@ -955,6 +944,19 @@ fun ChatScreen(
     }
 
     // Stage 1 Range Delete Dialog
+    // Emitted AFTER the Scaffold on purpose. Siblings draw in emission order,
+    // so placing this before it meant the chat painted straight over the board:
+    // it opened correctly every time and was simply underneath the whole UI.
+    // Overlays have to come last.
+    com.neveroff.ui.components.LiveBoardHost(
+        chatId = chatId,
+        myId = myId,
+        authKey = authKey,
+        partnerName = finalRemoteUserName,
+        startRequested = startBoardRequested,
+        onStartHandled = { startBoardRequested = false }
+    )
+
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },

@@ -67,7 +67,24 @@ fun LiveBoardHost(
                     // for a board they are already in.
                     if (!open) invitedBy = event.fromUserId
                 }
-                is LiveBoardSession.Event.Joined -> partnerJoined = true
+                is LiveBoardSession.Event.Joined -> {
+                    partnerJoined = true
+                    // Replay what is already on the board. Strokes are
+                    // broadcast, not stored, so somebody who joins a minute
+                    // later has missed every message sent before they
+                    // subscribed and would see an empty canvas next to a
+                    // drawing. Re-sending our own gives them the picture.
+                    val existing = strokes.filter { it.mine }
+                    existing.forEach { s ->
+                        runCatching {
+                            session.draw(
+                                LiveBoardSession.Stroke(
+                                    s.id, myId, s.color, s.width, s.points, done = true
+                                )
+                            )
+                        }
+                    }
+                }
                 is LiveBoardSession.Event.Drew -> {
                     val s = event.stroke
                     // Replace by id rather than append: a stroke arrives in
@@ -144,7 +161,12 @@ fun LiveBoardHost(
                     strokes.clear()
                     scope.launch { runCatching { session.close() } }
                 },
-                modifier = Modifier.align(Alignment.Center)
+                // Top of the screen, clear of the chat header, rather than
+                // centred: a board in the middle covers the messages the
+                // drawing is usually about.
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 72.dp)
             )
         }
     }
