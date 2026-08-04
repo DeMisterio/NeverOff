@@ -61,6 +61,31 @@ interface RecentSearchDao {
     @Query("DELETE FROM recent_searches WHERE userId = :userId")
     suspend fun deleteRecentSearch(userId: String)
 }
+/**
+ * Persisted profiles, so a name, avatar and bio survive being offline.
+ *
+ * REPLACE on conflict: a profile is a snapshot of remote state, and the newest
+ * copy always wins. There is no local-only field here that a refresh could
+ * destroy — that is what makes overwriting safe, unlike messages.
+ */
+@Dao
+interface ProfileDao {
+    @Query("SELECT * FROM local_profiles WHERE id = :id LIMIT 1")
+    suspend fun get(id: String): ProfileEntity?
+
+    @Query("SELECT * FROM local_profiles WHERE id IN (:ids)")
+    suspend fun getAll(ids: List<String>): List<ProfileEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(profile: ProfileEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(profiles: List<ProfileEntity>)
+
+    @Query("DELETE FROM local_profiles")
+    suspend fun clear()
+}
+
 @Dao
 interface MessageDao {
     @Query("SELECT * FROM local_messages WHERE chatId = :chatId ORDER BY createdAt ASC")
@@ -172,6 +197,18 @@ private val MIGRATION_8_9 = object : Migration(8, 9) {
 }
 
 /** Channels: local mirror of broadcast feeds and their posts. */
+/**
+ * Gives local_profiles the two columns it needs to serve an avatar and a bio
+ * while offline. The table has existed since early on but nothing ever read or
+ * wrote it, so there is no data to preserve — only the shape to correct.
+ */
+private val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `local_profiles` ADD COLUMN `bio` TEXT")
+        db.execSQL("ALTER TABLE `local_profiles` ADD COLUMN `cachedAt` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 private val MIGRATION_9_10 = object : Migration(9, 10) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
@@ -230,11 +267,12 @@ private val MIGRATION_9_10 = object : Migration(9, 10) {
         ChannelEntity::class,
         ChannelPostEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun profileDao(): ProfileDao
     abstract fun messageDao(): MessageDao
     abstract fun recentSearchDao(): RecentSearchDao
     abstract fun channelDao(): ChannelDao
@@ -255,7 +293,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "neveroff_db"
                 )
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .fallbackToDestructiveMigration() // last-resort safety net for dev builds
                 .build()
                 INSTANCE = instance

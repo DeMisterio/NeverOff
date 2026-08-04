@@ -44,13 +44,27 @@ data class ChatEntity(
     val pinSalt: String? = null
 )
 
+/**
+ * A profile kept on disk so it survives going offline and being restarted.
+ *
+ * The table existed already but had no DAO and nothing reading it, while
+ * ProfileCache held everything in memory behind a five-minute TTL. So every
+ * avatar and bio disappeared as soon as the app was reopened without a
+ * network, and reappeared only once a request succeeded.
+ *
+ * `bio` is new here for the same reason — it was fetched, displayed, and never
+ * written down anywhere.
+ */
 @Entity(tableName = "local_profiles")
 data class ProfileEntity(
     @PrimaryKey val id: String,
     val username: String,
     val displayName: String?,
     val avatarUrl: String? = null,
-    val publicKey: String
+    val publicKey: String,
+    val bio: String? = null,
+    /** When this copy was written, so freshness can be judged offline. */
+    val cachedAt: Long = 0L
 )
 
 @Entity(tableName = "recent_searches")

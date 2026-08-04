@@ -28,11 +28,27 @@ object KeyBackupRepository {
         val updated_at: String? = null
     )
 
+    /**
+     * The columns this client knows about, listed explicitly.
+     *
+     * Not Columns.ALL. The table also has created_at, which Row does not
+     * declare, and a strict decoder rejects an unexpected key by throwing —
+     * which fetch() then swallowed into null. The visible effect was the
+     * "don't lose your chats" banner nagging people who had already set a
+     * passphrase, because a decode failure is indistinguishable from "no row"
+     * once it has been turned into null.
+     *
+     * Naming the columns also means a column added to the table later cannot
+     * silently break every client that predates it.
+     */
+    private const val COLUMNS =
+        "user_id,public_key,wrapped_private_key,kdf_salt,kdf_iterations,kdf_algorithm,updated_at"
+
     /** The backup for this account, or null if they have never made one. */
     suspend fun fetch(userId: String): Row? = withContext(Dispatchers.IO) {
         try {
             SupabaseClient.client.postgrest["key_backups"]
-                .select(Columns.ALL) {
+                .select(Columns.raw(COLUMNS)) {
                     filter { eq("user_id", userId) }
                     limit(1)
                 }
@@ -43,8 +59,29 @@ object KeyBackupRepository {
         }
     }
 
-    /** Whether a backup exists, without pulling the blob down. */
-    suspend fun exists(userId: String): Boolean = fetch(userId) != null
+    /**
+     * True when a backup exists, false when it definitely does not, null when
+     * the question could not be answered.
+     *
+     * The third case matters. Callers that prompt the user to make a backup
+     * must not act on a failed lookup: telling someone who is offline that
+     * they have no backup is both wrong and, since the prompt is about losing
+     * their history, alarming.
+     */
+    suspend fun exists(userId: String): Boolean? = withContext(Dispatchers.IO) {
+        try {
+            val rows = SupabaseClient.client.postgrest["key_backups"]
+                .select(Columns.raw("user_id")) {
+                    filter { eq("user_id", userId) }
+                    limit(1)
+                }
+                .decodeList<Map<String, String>>()
+            rows.isNotEmpty()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     /**
      * Create or replace this account's backup.

@@ -80,6 +80,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         com.neveroff.crypto.CryptoManager.init(applicationContext)
+        // Must come after CryptoManager: opening the database needs its key.
+        com.neveroff.data.cache.ProfileCache.init(applicationContext)
         com.neveroff.util.AppLanguage.init(applicationContext)
         SettingsManager.init(applicationContext)
         com.neveroff.util.LoggerManager.init(applicationContext)
@@ -457,13 +459,23 @@ fun AppNavigation(intent: android.content.Intent?) {
                                 // A backup existing means the real key is
                                 // recoverable, so restoring it is strictly
                                 // better than replacing it. Offer that instead.
+                                // exists() is null when the lookup failed. Here
+                                // that must NOT be read as "no backup": the
+                                // else branch republishes this device's public
+                                // key over the account's, which is what used to
+                                // break the other device. Only a definite true
+                                // offers the restore, and only a definite false
+                                // republishes — an unknown answer leaves both
+                                // alone until the next launch can ask again.
                                 val backupExists = runCatching {
                                     com.neveroff.data.remote.KeyBackupRepository.exists(userId)
-                                }.getOrDefault(false)
+                                }.getOrNull()
 
                                 val remoteKeyIsReal = !remoteProfile.public_key.isNullOrBlank()
 
-                                if (backupExists && remoteKeyIsReal) {
+                                if (backupExists == null) {
+                                    // Could not tell. Change nothing.
+                                } else if (backupExists && remoteKeyIsReal) {
                                     withContext(Dispatchers.Main) {
                                         pendingKeyRestoreUserId = userId
                                     }

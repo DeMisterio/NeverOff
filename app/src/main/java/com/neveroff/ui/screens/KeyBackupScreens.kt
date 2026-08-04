@@ -219,8 +219,15 @@ fun BackupReminderBanner(
         if (userId.isNotBlank()) {
             // Only nags when the device holds a key worth protecting. A brand
             // new install that has not generated one yet has nothing to lose.
+            //
+            // exists() returns null when it could not find out — offline, or a
+            // failed request. That is treated as "do not nag": telling somebody
+            // they have no backup when the truth is unknown is wrong, and this
+            // particular message is about losing their entire history, so
+            // being wrong about it is worse than staying quiet.
+            val hasBackup = KeyBackupRepository.exists(userId)
             needed = com.neveroff.crypto.CryptoManager.hasStoredKeyPair() &&
-                !KeyBackupRepository.exists(userId)
+                hasBackup == false
         }
     }
 
