@@ -13,6 +13,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -112,6 +116,13 @@ fun ChannelScreen(
         if (visibleIds.isEmpty()) return@LaunchedEffect
         delay(VIEW_DWELL_MS)
         visibleIds.forEach { viewModel.registerView(it) }
+    }
+
+    // The post awaiting a forward target, or null. Holding the post rather than
+    // a boolean means the dialog cannot be opened without knowing what it would
+    // send.
+    var forwardingPost by remember {
+        mutableStateOf<com.neveroff.data.local.ChannelPostEntity?>(null)
     }
 
     // Open at the newest post, the way a chat does. Without this the list would
@@ -323,6 +334,7 @@ fun ChannelScreen(
                                 textSize = textSize,
                                 onReact = { emoji -> viewModel.toggleReaction(post.id, emoji) },
                                 onOpenReactionPicker = { viewModel.openReactionPicker(post.id) },
+                                onForward = { forwardingPost = post },
                                 onDelete = {
                                     viewModel.deletePost(post.id) { success ->
                                         if (!success) {
@@ -336,6 +348,95 @@ fun ChannelScreen(
                 }
             }
         }
+    }
+
+    forwardingPost?.let { post ->
+        val forwardContext = androidx.compose.ui.platform.LocalContext.current
+        val forwardScope = rememberCoroutineScope()
+        val db = remember { com.neveroff.data.local.AppDatabase.getDatabase(forwardContext) }
+        var chats by remember { mutableStateOf<List<com.neveroff.data.local.ChatEntity>>(emptyList()) }
+        val selected = remember { mutableStateListOf<String>() }
+
+        LaunchedEffect(Unit) { db.chatDao().getAllChats().collect { chats = it } }
+
+        AlertDialog(
+            onDismissRequest = { forwardingPost = null },
+            title = { Text(stringResource(com.neveroff.R.string.forward_to)) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    chats.forEach { chat ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (selected.contains(chat.id)) selected.remove(chat.id)
+                                    else selected.add(chat.id)
+                                }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Checkbox(
+                                checked = selected.contains(chat.id),
+                                onCheckedChange = { on ->
+                                    if (on) selected.add(chat.id) else selected.remove(chat.id)
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(chat.otherUserName, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = selected.isNotEmpty(),
+                    onClick = {
+                        val targets = selected.toList()
+                        val username = channel?.username
+                        forwardingPost = null
+                        forwardScope.launch {
+                            // Without a resolved username the attribution
+                            // footer would be missing, which is the one part of
+                            // a forward that must not be silently dropped.
+                            if (username.isNullOrBlank()) {
+                                com.neveroff.ui.components.AppToast.error(
+                                    forwardContext.getString(com.neveroff.R.string.forward_failed)
+                                )
+                                return@launch
+                            }
+                            val sent = com.neveroff.data.repository.PostForwarder.forward(
+                                db = db,
+                                myId = myId,
+                                postText = post.content,
+                                channelUsername = username,
+                                targetChatIds = targets
+                            )
+                            if (sent > 0) {
+                                com.neveroff.ui.components.AppToast.success(
+                                    forwardContext.getString(com.neveroff.R.string.forward_sent)
+                                )
+                            } else {
+                                com.neveroff.ui.components.AppToast.error(
+                                    forwardContext.getString(com.neveroff.R.string.forward_failed)
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    Text("${stringResource(com.neveroff.R.string.action_forward)} (${selected.size})")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { forwardingPost = null }) {
+                    Text(stringResource(com.neveroff.R.string.action_cancel))
+                }
+            }
+        )
     }
 
     pickerForPost?.let { postId ->

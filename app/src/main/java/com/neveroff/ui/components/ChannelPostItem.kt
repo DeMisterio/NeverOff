@@ -54,10 +54,12 @@ fun ChannelPostItem(
     onReact: (String) -> Unit,
     onOpenReactionPicker: () -> Unit,
     onDelete: () -> Unit,
+    onForward: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val counts = remember(post.reactionCounts) { decodeReactionCounts(post.reactionCounts) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showActionMenu by remember { mutableStateOf(false) }
 
     // Reacting is gated here rather than at each call site: reactions are
     // reachable from the tap row, the picker and a double tap on the bubble,
@@ -135,7 +137,10 @@ fun ChannelPostItem(
                                 guardedReact(emoji)
                             }
                         },
-                        onLongPress = { if (isOwner) showDeleteDialog = true }
+                        // Long press now opens a menu rather than going
+                        // straight to delete. Forwarding is available to every
+                        // reader, so the gesture can no longer be owner-only.
+                        onLongPress = { showActionMenu = true }
                     )
                 },
             // The clipped bottom-start corner is what makes a bubble read as
@@ -228,6 +233,50 @@ fun ChannelPostItem(
                     .scale(burstScale)
             )
         }
+    }
+
+    if (showActionMenu) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showActionMenu = false },
+            title = { Text(androidx.compose.ui.res.stringResource(com.neveroff.R.string.action_forward)) },
+            text = {
+                Column {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(
+                            com.neveroff.R.string.forward_to
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showActionMenu = false
+                                onForward()
+                            }
+                            .padding(vertical = 12.dp)
+                    )
+                    if (isOwner) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(
+                                com.neveroff.R.string.action_delete
+                            ),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showActionMenu = false
+                                    showDeleteDialog = true
+                                }
+                                .padding(vertical = 12.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showActionMenu = false }) {
+                    Text(androidx.compose.ui.res.stringResource(com.neveroff.R.string.action_cancel))
+                }
+            }
+        )
     }
 
     if (showDeleteDialog) {

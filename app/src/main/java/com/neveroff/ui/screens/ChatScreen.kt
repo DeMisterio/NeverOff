@@ -145,8 +145,26 @@ data class UiMessage(
      * Set when the whole message is a single `n.me/<username>` link, in which
      * case the bubble renders a channel card instead of the raw text.
      */
-    val channelLinkUsername: String? = null
+    val channelLinkUsername: String? = null,
+    /**
+     * Set when this message is a channel post someone forwarded into the chat.
+     *
+     * Distinct from [channelLinkUsername], which means "this message is nothing
+     * but a link". A forwarded post keeps its own text and gains the channel as
+     * an attribution footer, so both the content and its source are visible.
+     */
+    val fromChannel: String? = null
 )
+
+/**
+ * Marker appended to a forwarded channel post, naming the channel it came from.
+ *
+ * Carried inside the message body rather than in a column because the body is
+ * the only part of a message the server cannot read — adding a `from_channel`
+ * column would publish, in plaintext, which channels a user reads and forwards.
+ * That is precisely the metadata end-to-end encryption exists to withhold.
+ */
+const val FORWARDED_CHANNEL_MARKER = "::FWDCH::"
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -286,6 +304,14 @@ fun ChatScreen(
             rawText = rawText.removePrefix("[FWD]")
         }
 
+        // Extracted before ::REPLY:: so a forwarded post that is also a reply
+        // has its channel stripped from the tail first, rather than the reply
+        // id swallowing the marker.
+        val fromChannel = if (rawText.contains(FORWARDED_CHANNEL_MARKER)) {
+            rawText.substringAfterLast(FORWARDED_CHANNEL_MARKER).takeIf { it.isNotBlank() }
+        } else null
+        if (fromChannel != null) rawText = rawText.substringBeforeLast(FORWARDED_CHANNEL_MARKER)
+
         val rId = if (rawText.contains("::REPLY::")) rawText.substringAfterLast("::REPLY::") else null
         if (rId != null) rawText = rawText.substringBeforeLast("::REPLY::")
 
@@ -317,7 +343,8 @@ fun ChatScreen(
             hasPassword = pwd,
             isMedia = media,
             isForwarded = isFwd,
-            channelLinkUsername = channelUsername
+            channelLinkUsername = channelUsername,
+            fromChannel = fromChannel
         )
     }
 
@@ -1535,7 +1562,8 @@ fun MessageBubble(
                 } else {
                     // Inline time/status: if text is short enough, put time on same row
                     val timeStr = formatTime(msg.timestamp)
-                    val isShortText = msg.text.length < 20 && !msg.text.contains("\n")
+                    val isShortText = msg.fromChannel == null &&
+                        msg.text.length < 20 && !msg.text.contains("\n")
 
                     if (isShortText) {
                         Row(verticalAlignment = Alignment.Bottom) {
@@ -1572,12 +1600,31 @@ fun MessageBubble(
                     }
                 }
 
+                // A forwarded channel post carries its source at the foot of the
+                // bubble, rendered with the same card an attached channel link
+                // gets. Attribution belongs with the content: a post that
+                // travels into a private chat without saying where it came from
+                // is indistinguishable from something the sender wrote.
+                if (msg.fromChannel != null && channelRepository != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    com.neveroff.ui.components.ChannelLinkCard(
+                        username = msg.fromChannel,
+                        repository = channelRepository,
+                        contentColor = contentTextColor,
+                        accentColor = MaterialTheme.colorScheme.primary,
+                        onOpenChannel = onOpenChannel
+                    )
+                }
+
                 // Separate time row for long messages / media / locked. Round notes get the same
                 // information, but as a floating pill under the circle since they have no bubble
                 // for it to sit inside.
                 // A channel card is never "short text", even though its link is:
                 // it needs the standalone time row underneath, not an inline one.
-                val isShortTextMsg = !msg.isMedia && !msg.hasPassword && msg.channelLinkUsername == null &&
+                // A forwarded post is never "short text" either: the card below
+                // it needs the standalone time row, not one tucked inline.
+                val isShortTextMsg = !msg.isMedia && !msg.hasPassword &&
+                    msg.channelLinkUsername == null && msg.fromChannel == null &&
                     msg.text.length < 20 && !msg.text.contains("\n")
                 if (!isShortTextMsg || msg.isMedia || (msg.hasPassword && !isPasswordUnlocked)) {
                     Row(
