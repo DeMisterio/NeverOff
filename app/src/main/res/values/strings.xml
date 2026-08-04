@@ -320,4 +320,11 @@
     <string name="what_this_affects">What this affects</string>
     <string name="what_would_you_like_to_happen">What would you like to happen?</string>
     <string name="your_messages_are_end_to_end">Your messages are end-to-end </string>
+    <string name="theme_black">Black</string>
+    <string name="auto_delete_title">Auto-delete messages</string>
+    <string name="auto_delete_explain">Removes older messages from this device. It does not delete them for the other person.</string>
+    <string name="auto_delete_off">Off</string>
+    <string name="auto_delete_minutes">%1$d min</string>
+    <string name="auto_delete_hours">%1$d h</string>
+    <string name="auto_delete_days_n">%1$d d</string>
 </resources>

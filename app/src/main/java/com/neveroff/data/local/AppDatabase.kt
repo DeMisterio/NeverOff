@@ -113,6 +113,17 @@ interface MessageDao {
     @Query("UPDATE local_messages SET createdAt = :createdAt WHERE id = :id AND createdAt <> :createdAt")
     suspend fun repairTimestamp(id: String, createdAt: Long)
 
+    /**
+     * Local retention: drop messages older than [cutoff] from this device.
+     *
+     * Device-side only. It does not ask the server to delete anything, because
+     * this is a per-device setting and one device cannot decide what the other
+     * side of a conversation keeps. The settings copy says so plainly rather
+     * than letting "auto-delete" imply more than it does.
+     */
+    @Query("DELETE FROM local_messages WHERE createdAt < :cutoff")
+    suspend fun deleteOlderThan(cutoff: Long): Int
+
     @Query("UPDATE local_messages SET status = :status WHERE id = :id")
     suspend fun updateMessageStatus(id: String, status: Int)
 

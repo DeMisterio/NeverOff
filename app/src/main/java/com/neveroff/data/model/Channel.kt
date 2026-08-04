@@ -73,14 +73,37 @@ data class Channel(
         /** The six reactions offered out of the box, in picker order. */
         val DEFAULT_REACTIONS = listOf("❤️", "👍", "👎", "🤡", "⚡", "😍")
 
-        /** Everything a channel owner can choose to allow. */
+        /**
+         * Everything a channel owner can choose to allow.
+         *
+         * Widened from 14 after readers said the choice felt cramped. Grouped
+         * by what a reaction is *for* — approval, amusement, surprise, upset,
+         * celebration, emphasis — because an owner picking a set wants one
+         * from each register, not fourteen variations on a smile.
+         */
         val AVAILABLE_REACTIONS = listOf(
-            "❤️", "👍", "👎", "🤡", "⚡", "😍",
-            "🔥", "😂", "😮", "😢", "🎉", "🙏", "💯", "👀"
+            // Approval and disapproval
+            "❤️", "👍", "👎", "🔥", "💯", "🫡",
+            // Amusement
+            "😂", "🤣", "😍", "🤡", "🤪", "😎",
+            // Surprise and doubt
+            "😮", "🤯", "🤔", "👀", "🤨", "😱",
+            // Upset
+            "😢", "😡", "💔", "🥺",
+            // Celebration and thanks
+            "🎉", "🙏", "🥳", "👏", "🍾",
+            // Emphasis
+            "⚡", "✅", "❌", "⭐", "🚀", "💡"
         )
 
-        /** A post can show at most six reaction pills — a 3x2 grid. */
-        const val MAX_REACTIONS = 6
+        /**
+         * How many pills a post can show.
+         *
+         * Ten rather than six: the grid wraps, so the old cap was a choice
+         * about clutter rather than a layout limit, and channels with a broad
+         * audience were running out of room to express anything but agreement.
+         */
+        const val MAX_REACTIONS = 10
     }
 }
 

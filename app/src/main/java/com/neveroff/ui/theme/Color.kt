@@ -3,6 +3,24 @@ package com.neveroff.ui.theme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 
+// Black Theme (AMOLED)
+//
+// A true black rather than a very dark grey, because that is the whole point:
+// on an OLED panel a #000000 pixel is switched off, so the background costs no
+// power and reads as genuinely black next to the bezel. Anything above zero,
+// including the "dark" theme's navy, lights every pixel and looks washed out
+// in a dark room — which is what people mean when they ask for a black theme
+// and are given a dark blue one.
+//
+// Surfaces step up in small increments instead of staying black: a card that
+// is exactly as black as the page behind it has no edge, and elevation stops
+// meaning anything.
+val BlackBackground = Color(0xFF000000)
+val BlackSurface = Color(0xFF0A0A0A)
+val BlackSurfaceVariant = Color(0xFF1A1A1A)
+val BlackSurfaceElevated = Color(0xFF141414)
+val BlackText = Color(0xFFEDEDED)
+
 // Dark Theme (Dark Blue)
 val DarkBackground = Color(0xFF051024)
 val DarkSurface = Color(0xFF0A1C38)

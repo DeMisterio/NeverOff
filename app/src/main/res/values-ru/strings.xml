@@ -316,4 +316,11 @@
     <string name="your_messages_are_end_to_end">Ваши сообщения защищены сквозным</string>
     <string name="edit_profile_title">Изменить профиль</string>
     <string name="label_username">Юзернейм</string>
+    <string name="theme_black">Чёрная</string>
+    <string name="auto_delete_title">Автоудаление сообщений</string>
+    <string name="auto_delete_explain">Удаляет старые сообщения с этого устройства. У собеседника они останутся.</string>
+    <string name="auto_delete_off">Выкл.</string>
+    <string name="auto_delete_minutes">%1$d мин</string>
+    <string name="auto_delete_hours">%1$d ч</string>
+    <string name="auto_delete_days_n">%1$d д</string>
 </resources>

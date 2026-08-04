@@ -399,6 +399,7 @@ private fun SettingsCard(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
     val settingsContext = LocalContext.current
@@ -427,16 +428,32 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
             SettingsCard {
                 Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
+                // FlowRow, not a weighted Row: there are four options now and
+                // the fourth would squeeze all of them past readability on a
+                // narrow phone. Labels come from resources rather than
+                // pref.name, which was rendering the raw enum — "SYSTEM" in
+                // shouting caps, untranslated, in every language.
+                androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     ThemePreference.values().forEach { pref ->
                         FilterChip(
                             selected = themePref == pref,
                             onClick = { SettingsManager.setTheme(pref) },
-                            label = { Text(pref.name) },
-                            modifier = Modifier.weight(1f)
+                            label = {
+                                Text(
+                                    stringResource(
+                                        when (pref) {
+                                            ThemePreference.SYSTEM -> R.string.theme_system
+                                            ThemePreference.LIGHT -> R.string.theme_light
+                                            ThemePreference.DARK -> R.string.theme_dark
+                                            ThemePreference.BLACK -> R.string.theme_black
+                                        }
+                                    )
+                                )
+                            }
                         )
                     }
                 }
@@ -693,6 +710,16 @@ private fun AnimationsCategoryScreen() {
     }
 }
 
+/** "Off", "1 hour", "6 hours", "1 day" — built from resources so it translates. */
+@Composable
+private fun autoDeleteLabel(minutes: Int): String = when {
+    minutes <= 0 -> stringResource(R.string.auto_delete_off)
+    minutes < 60 -> stringResource(R.string.auto_delete_minutes, minutes)
+    minutes < 24 * 60 -> stringResource(R.string.auto_delete_hours, minutes / 60)
+    else -> stringResource(R.string.auto_delete_days_n, minutes / (24 * 60))
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun PrivacyCategoryScreen() {
     val autoDeleteDays by SettingsManager.autoDeleteDaysFlow.collectAsState()
@@ -711,13 +738,34 @@ private fun PrivacyCategoryScreen() {
     ) {
         item {
             SettingsCard {
-                Text("Auto-delete Messages: ${if (autoDeleteDays == 0) "Off" else "$autoDeleteDays days"}", style = MaterialTheme.typography.titleMedium)
-                Slider(
-                    value = autoDeleteDays.toFloat(),
-                    onValueChange = { SettingsManager.setAutoDeleteDays(it.toInt()) },
-                    valueRange = 0f..30f,
-                    steps = 30
+                Text(
+                    stringResource(R.string.auto_delete_title),
+                    style = MaterialTheme.typography.titleMedium
                 )
+                Text(
+                    stringResource(R.string.auto_delete_explain),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                // Discrete choices rather than a slider. The useful values are
+                // not evenly spaced — an hour and a month both matter, and
+                // nobody wants 17 days — and a slider could not reach below a
+                // day at all, which is what people were asking for.
+                val autoDeleteMinutes by SettingsManager.autoDeleteMinutesFlow.collectAsState()
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SettingsManager.AUTO_DELETE_CHOICES.forEach { minutes ->
+                        val selected = autoDeleteMinutes == minutes
+                        FilterChip(
+                            selected = selected,
+                            onClick = { SettingsManager.setAutoDeleteMinutes(minutes) },
+                            label = { Text(autoDeleteLabel(minutes)) }
+                        )
+                    }
+                }
             }
         }
 

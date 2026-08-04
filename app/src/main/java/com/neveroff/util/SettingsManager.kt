@@ -6,7 +6,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 enum class ThemePreference {
-    SYSTEM, LIGHT, DARK
+    SYSTEM, LIGHT, DARK,
+
+    /**
+     * True black, for OLED panels.
+     *
+     * A separate preference rather than a toggle attached to DARK, because
+     * somebody on SYSTEM who wants black at night would otherwise have no way
+     * to say so. [isDark] resolves all four against the system setting in one
+     * place, so no screen has to reason about the combination itself.
+     */
+    BLACK;
+
+    fun isDark(systemInDark: Boolean): Boolean = when (this) {
+        SYSTEM -> systemInDark
+        LIGHT -> false
+        DARK, BLACK -> true
+    }
+
+    val isAmoled: Boolean get() = this == BLACK
 }
 
 object SettingsManager {
@@ -116,6 +134,12 @@ object SettingsManager {
         _applyThemeToAlreadyChangedFlow.value = prefs.getBoolean("apply_to_already_changed", false)
 
         _autoDeleteDaysFlow.value = prefs.getInt("auto_delete_days", 0)
+        // Carry a previously chosen day count over to the new unit, so anyone
+        // who set this before does not silently have it reset to Off.
+        _autoDeleteMinutesFlow.value = prefs.getInt(
+            "auto_delete_minutes",
+            prefs.getInt("auto_delete_days", 0) * 24 * 60
+        )
         _seenIndicatorSelfFlow.value = prefs.getBoolean("seen_indicator_self", true)
         _seenIndicatorOthersFlow.value = prefs.getBoolean("seen_indicator_others", true)
         _visibilityBioFlow.value = prefs.getString("visibility_bio", "Everyone") ?: "Everyone"
@@ -207,6 +231,34 @@ object SettingsManager {
         _autoDeleteDaysFlow.value = days
         prefs.edit().putInt("auto_delete_days", days).apply()
     }
+
+    /**
+     * How long a message stays on this device, in minutes. 0 means keep forever.
+     *
+     * Minutes, not days, because the old day-granularity slider could not
+     * express anything shorter than 24 hours — and it was decorative anyway:
+     * nothing outside the settings screen ever read it, so no message was ever
+     * deleted by it.
+     */
+    private val _autoDeleteMinutesFlow = MutableStateFlow(0)
+    val autoDeleteMinutesFlow: StateFlow<Int> = _autoDeleteMinutesFlow
+
+    fun setAutoDeleteMinutes(minutes: Int) {
+        _autoDeleteMinutesFlow.value = minutes
+        prefs.edit().putInt("auto_delete_minutes", minutes).apply()
+    }
+
+    /** The choices offered, shortest first. Off is index 0. */
+    val AUTO_DELETE_CHOICES = listOf(
+        0,            // Off
+        60,           // 1 hour
+        6 * 60,       // 6 hours
+        12 * 60,      // 12 hours
+        24 * 60,      // 1 day
+        3 * 24 * 60,  // 3 days
+        7 * 24 * 60,  // 1 week
+        30 * 24 * 60  // 30 days
+    )
 
     fun setSeenIndicatorSelf(enabled: Boolean) {
         _seenIndicatorSelfFlow.value = enabled

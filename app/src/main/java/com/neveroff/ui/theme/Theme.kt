@@ -24,6 +24,16 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = DarkText
 )
 
+private val BlackColorScheme = darkColorScheme(
+    primary = AccentPurple,
+    background = BlackBackground,
+    surface = BlackSurface,
+    surfaceVariant = BlackSurfaceVariant,
+    surfaceTint = AccentPurple,
+    onBackground = BlackText,
+    onSurface = BlackText
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = AccentPurple,
     background = LightBackground,
@@ -46,9 +56,15 @@ val NeverOffShapes = Shapes(
 @Composable
 fun NeverOffTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    /** True black instead of the navy dark scheme. Ignored when [darkTheme] is false. */
+    amoled: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = when {
+        darkTheme && amoled -> BlackColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

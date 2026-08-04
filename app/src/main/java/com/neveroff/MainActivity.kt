@@ -104,13 +104,9 @@ class MainActivity : FragmentActivity() {
                 LocalContext provides localizedContext,
                 androidx.activity.compose.LocalActivityResultRegistryOwner provides this@MainActivity
             ) {
-                val isDark = when (currentThemePref) {
-                    ThemePreference.SYSTEM -> isSystemInDarkTheme()
-                    ThemePreference.LIGHT -> false
-                    ThemePreference.DARK -> true
-                }
+                val isDark = currentThemePref.isDark(isSystemInDarkTheme())
 
-                NeverOffTheme(darkTheme = isDark) {
+                NeverOffTheme(darkTheme = isDark, amoled = currentThemePref.isAmoled) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
@@ -285,6 +281,14 @@ fun AppNavigation(intent: android.content.Intent?) {
                 Lifecycle.Event.ON_PAUSE ->
                     com.neveroff.data.remote.GlobalRealtimeManager.isAppInForeground = false
                 else -> Unit
+            }
+
+            // Enforce the auto-delete window every time the app comes forward,
+            // so nothing that should already be gone is ever on screen.
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch {
+                    runCatching { com.neveroff.data.local.RetentionSweeper.sweep(context) }
+                }
             }
 
             if (event == Lifecycle.Event.ON_RESUME && sessionStatus is SessionStatus.Authenticated) {
