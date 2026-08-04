@@ -102,10 +102,24 @@ fun ChannelPostItem(
         }
     }
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    // Posts read as incoming messages for everyone, the channel owner included.
+    //
+    // A feed where the owner sees their own posts right-aligned turns the
+    // channel into a chat with themselves, and it changes shape depending on
+    // who is looking — the same post sits on a different side for the author
+    // than for every reader. Since a channel is a broadcast that everybody
+    // receives, including the person who sent it, left is the honest side.
+    // Ownership shows up in what you can *do* (long-press to delete), not in
+    // which way the bubble points.
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.CenterStart
+    ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
+                // Short of full width, like a received bubble, so the feed reads
+                // as a conversation rather than as a stack of cards.
+                .fillMaxWidth(0.88f)
                 .pointerInput(post.id, allowedReactions) {
                     detectTapGestures(
                         onDoubleTap = {
@@ -124,7 +138,11 @@ fun ChannelPostItem(
                         onLongPress = { if (isOwner) showDeleteDialog = true }
                     )
                 },
-            shape = RoundedCornerShape(20.dp),
+            // The clipped bottom-start corner is what makes a bubble read as
+            // "received" at a glance, before any colour is registered.
+            shape = RoundedCornerShape(
+                topStart = 20.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 4.dp
+            ),
             color = MaterialTheme.colorScheme.surfaceVariant,
             tonalElevation = 1.dp,
             shadowElevation = 2.dp
