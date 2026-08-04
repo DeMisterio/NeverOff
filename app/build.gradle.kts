@@ -31,8 +31,8 @@ android {
         // resend, shows console warnings, and puts @support in search. The
         // leading zero is read as a fraction by compareVersions, so it sorts
         // above 3.0 and below a future 3.1.
-        versionCode = 10
-        versionName = "3.03"
+        versionCode = 11
+        versionName = "3.04"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
