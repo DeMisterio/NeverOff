@@ -103,11 +103,29 @@ fun LoginScreen(onCodeSent: (String) -> Unit) {
                                     SupabaseClient.client.auth.signInWith(OTP) {
                                         this.email = targetEmail
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                } finally {
                                     isLoading = false
                                     onCodeSent(targetEmail)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    isLoading = false
+                                    val rawMsg = e.message ?: ""
+                                    when {
+                                        rawMsg.contains("Unable to resolve host", ignoreCase = true) ||
+                                            e is java.net.UnknownHostException ->
+                                            com.neveroff.ui.components.AppToast.error(
+                                                "No internet connection. Please check your Wi-Fi, Mobile Data, or VPN and try again."
+                                            )
+                                        // Throttled because a code was already sent recently - the
+                                        // user still has one, so let them go on and enter it.
+                                        rawMsg.contains("security purposes", ignoreCase = true) ||
+                                            rawMsg.contains("rate limit", ignoreCase = true) -> {
+                                            com.neveroff.ui.components.AppToast.show(
+                                                "A code was already sent. Enter it, or request a new one shortly."
+                                            )
+                                            onCodeSent(targetEmail)
+                                        }
+                                        else -> com.neveroff.ui.components.AppToast.error("Couldn't send the code: $rawMsg")
+                                    }
                                 }
                             }
                         },

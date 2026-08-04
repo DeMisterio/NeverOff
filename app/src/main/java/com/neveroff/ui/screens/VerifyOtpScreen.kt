@@ -19,25 +19,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.neveroff.R
 import com.neveroff.data.remote.SupabaseClient
 import io.github.jan.supabase.gotrue.OtpType
 import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.builtin.OTP
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
+/** Resend unlocks 30s after the screen opens; every later one after a full minute. */
+private const val FIRST_RESEND_COOLDOWN = 30
+private const val LATER_RESEND_COOLDOWN = 60
+
 @Composable
 fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
     var code by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
+    // Verification outlives this composable: a successful verify flips the session to
+    // Authenticated, which navigates away and would cancel a rememberCoroutineScope()
+    // job mid-flight ("the coroutine scope left the composition").
+    val authScope = LocalLifecycleOwner.current.lifecycleScope
     var isLoading by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
+    var isResending by remember { mutableStateOf(false) }
+    var resendCooldown by remember { mutableStateOf(FIRST_RESEND_COOLDOWN) }
+
+    LaunchedEffect(resendCooldown) {
+        if (resendCooldown > 0) {
+            delay(1000)
+            resendCooldown--
+        }
+    }
 
     AuthGradientBackground {
     Column(
@@ -131,7 +150,7 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
                 val token = code.trim()
                 if (token.length != 6) return@Button
 
-                scope.launch {
+                authScope.launch {
                     isLoading = true
                     try {
                         var success = false
@@ -225,6 +244,52 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = {
+                val targetEmail = email.trim()
+                authScope.launch {
+                    isResending = true
+                    try {
+                        SupabaseClient.client.auth.signInWith(OTP) {
+                            this.email = targetEmail
+                        }
+                        code = ""
+                        resendCooldown = LATER_RESEND_COOLDOWN
+                        com.neveroff.ui.components.AppToast.show("A new code is on its way to $targetEmail")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        val rawMsg = e.message ?: ""
+                        val userMsg = when {
+                            rawMsg.contains("Unable to resolve host", ignoreCase = true) || e is UnknownHostException ->
+                                "No internet connection. Please check your Wi-Fi, Mobile Data, or VPN and try again."
+                            // Supabase throttles OTP sends server-side; back off until the next window.
+                            rawMsg.contains("security purposes", ignoreCase = true) || rawMsg.contains("rate limit", ignoreCase = true) -> {
+                                resendCooldown = LATER_RESEND_COOLDOWN
+                                "Too many requests. Please wait a moment before asking for a new code."
+                            }
+                            else -> "Couldn't resend the code: $rawMsg"
+                        }
+                        com.neveroff.ui.components.AppToast.error(userMsg)
+                    } finally {
+                        isResending = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = resendCooldown == 0 && !isResending && !isLoading && !isSuccess
+        ) {
+            Text(
+                text = when {
+                    isResending -> "Sending..."
+                    resendCooldown > 0 -> "Resend code in ${resendCooldown}s"
+                    else -> "Resend code"
+                },
+                style = MaterialTheme.typography.labelLarge
+            )
         }
         }
         }

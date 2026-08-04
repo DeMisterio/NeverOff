@@ -153,6 +153,27 @@ data class ChatResponse(val id: String)
 @Serializable
 data class ChatParticipantInsert(val chat_id: String, val user_id: String)
 
+/**
+ * Rebuilds the locally cached profile, or null when this device has never completed
+ * profile setup. Requires both a cached profile id and username: "my_user_id" on its own
+ * only proves the account is authenticated, and treating that as a profile is what used to
+ * drop freshly registered users onto chat_list with an empty "Me" profile.
+ */
+private fun loadCachedProfile(prefs: android.content.SharedPreferences): com.neveroff.ui.screens.Profile? {
+    val cachedId = com.neveroff.util.SecurePrefs.getString(prefs, "profile_id")
+    val cachedUsername = com.neveroff.util.SecurePrefs.getString(prefs, "profile_username")
+    if (cachedId.isNullOrEmpty() || cachedUsername.isNullOrBlank()) return null
+
+    val cachedDisplayName = com.neveroff.util.SecurePrefs.getString(prefs, "profile_display_name")
+    return com.neveroff.ui.screens.Profile(
+        id = cachedId,
+        username = cachedUsername,
+        display_name = if (!cachedDisplayName.isNullOrBlank()) cachedDisplayName else cachedUsername,
+        bio = com.neveroff.util.SecurePrefs.getString(prefs, "profile_bio"),
+        public_key = com.neveroff.util.SecurePrefs.getString(prefs, "profile_public_key") ?: ""
+    )
+}
+
 @Composable
 fun AppNavigation(intent: android.content.Intent?) {
     val onboardingContext = androidx.compose.ui.platform.LocalContext.current
@@ -309,22 +330,12 @@ fun AppNavigation(intent: android.content.Intent?) {
     val prefs = remember { context.getSharedPreferences("neveroff_prefs", android.content.Context.MODE_PRIVATE) }
     var isRealtimeConnected by remember { mutableStateOf(false) }
 
-    // FAST LOCAL-FIRST RESOLUTION: Load local profile and navigate away from loading instantly
+    // FAST LOCAL-FIRST RESOLUTION: Load local profile and navigate away from loading instantly.
+    // Only a cached profile that was actually registered (id + username) counts - "my_user_id"
+    // alone just means the account is authenticated and may still have no profile row.
     LaunchedEffect(Unit) {
-        val cachedId = com.neveroff.util.SecurePrefs.getString(prefs, "profile_id") ?: com.neveroff.util.SecurePrefs.getString(prefs, "my_user_id")
-        val cachedUsername = com.neveroff.util.SecurePrefs.getString(prefs, "profile_username")
-        val cachedDisplayName = com.neveroff.util.SecurePrefs.getString(prefs, "profile_display_name")
-        val cachedBio = com.neveroff.util.SecurePrefs.getString(prefs, "profile_bio")
-        val cachedPubKey = com.neveroff.util.SecurePrefs.getString(prefs, "profile_public_key")
-
-        if (!cachedId.isNullOrEmpty()) {
-            val localProf = com.neveroff.ui.screens.Profile(
-                id = cachedId,
-                username = cachedUsername ?: "",
-                display_name = if (!cachedDisplayName.isNullOrBlank()) cachedDisplayName else "Me",
-                bio = cachedBio,
-                public_key = cachedPubKey ?: ""
-            )
+        val localProf = loadCachedProfile(prefs)
+        if (localProf != null) {
             myProfile = localProf
             com.neveroff.data.cache.ProfileCache.put(localProf)
 
@@ -360,22 +371,12 @@ fun AppNavigation(intent: android.content.Intent?) {
 
                 val userId = currentUserId ?: status.session.user?.id
                 if (userId != null) {
-                    // 1. FAST PATH: Ensure local profile is set
+                    // 1. FAST PATH: Ensure local profile is set. A freshly verified account has no
+                    // cached profile yet - do NOT synthesise one from the user id, or registration
+                    // silently lands on chat_list with an empty "Me" profile instead of profile_setup.
                     if (myProfile == null) {
-                        val cachedId = com.neveroff.util.SecurePrefs.getString(prefs, "profile_id") ?: userId
-                        val cachedUsername = com.neveroff.util.SecurePrefs.getString(prefs, "profile_username")
-                        val cachedDisplayName = com.neveroff.util.SecurePrefs.getString(prefs, "profile_display_name")
-                        val cachedBio = com.neveroff.util.SecurePrefs.getString(prefs, "profile_bio")
-                        val cachedPubKey = com.neveroff.util.SecurePrefs.getString(prefs, "profile_public_key")
-
-                        if (!cachedId.isNullOrEmpty()) {
-                            val localProf = com.neveroff.ui.screens.Profile(
-                                id = cachedId,
-                                username = cachedUsername ?: "",
-                                display_name = if (!cachedDisplayName.isNullOrBlank()) cachedDisplayName else "Me",
-                                bio = cachedBio,
-                                public_key = cachedPubKey ?: ""
-                            )
+                        val localProf = loadCachedProfile(prefs)
+                        if (localProf != null) {
                             myProfile = localProf
                             com.neveroff.data.cache.ProfileCache.put(localProf)
                         }
@@ -461,10 +462,21 @@ fun AppNavigation(intent: android.content.Intent?) {
                                 }
                             }
                         } else {
-                            // Network fetch failed (e.g. offline) - navigate to chat_list using local data if on loading
+                            // Network fetch failed (e.g. offline)
                             withContext(Dispatchers.Main) {
                                 if (navController.currentDestination?.route in listOf("loading", "login", "verify")) {
-                                    navController.navigate("chat_list") { popUpTo(0) }
+                                    if (myProfile != null) {
+                                        // Navigate to chat_list using local data
+                                        navController.navigate("chat_list") { popUpTo(0) }
+                                    } else {
+                                        // Nothing cached: we can't tell whether this account has a
+                                        // profile yet, so send the user back instead of stranding
+                                        // them on a spinner or on an empty "Me" profile.
+                                        com.neveroff.ui.components.AppToast.error(
+                                            "Couldn't reach the server. Check your connection and try again."
+                                        )
+                                        navController.navigate("login") { popUpTo(0) }
+                                    }
                                 }
                             }
                         }
@@ -476,10 +488,10 @@ fun AppNavigation(intent: android.content.Intent?) {
                 }
             } else if (status is SessionStatus.NotAuthenticated) {
                 isRealtimeConnected = false
-                val cachedId = com.neveroff.util.SecurePrefs.getString(prefs, "profile_id") ?: com.neveroff.util.SecurePrefs.getString(prefs, "my_user_id")
-                if (cachedId == null && navController.currentDestination?.route in listOf("loading", "profile_setup")) {
+                val cachedProfile = loadCachedProfile(prefs)
+                if (cachedProfile == null && navController.currentDestination?.route in listOf("loading", "profile_setup")) {
                     navController.navigate("login") { popUpTo(0) }
-                } else if (cachedId != null && navController.currentDestination?.route == "loading") {
+                } else if (cachedProfile != null && navController.currentDestination?.route == "loading") {
                     // If offline, still allow opening chat_list with cached profile
                     navController.navigate("chat_list") { popUpTo(0) }
                 }
@@ -600,6 +612,13 @@ fun AppNavigation(intent: android.content.Intent?) {
         }
         composable("profile_setup") {
             ProfileSetupScreen(onComplete = {
+                // The session is already Authenticated, so the status collector won't emit
+                // again - resolve the freshly written profile here rather than relying on
+                // it, or the rest of the app has no profile to show.
+                loadCachedProfile(prefs)?.let { prof ->
+                    myProfile = prof
+                    com.neveroff.data.cache.ProfileCache.put(prof)
+                }
                 // Suggest the official channel once the account actually works.
                 // Putting it earlier would mean asking someone to subscribe to
                 // news about a product they have not finished signing up for.
@@ -611,8 +630,11 @@ fun AppNavigation(intent: android.content.Intent?) {
             var subscribing by remember { mutableStateOf(false) }
             var loadFailed by remember { mutableStateOf(false) }
 
+            // Straight to the app: "loading" only resolves when the session
+            // collector emits, and it does not emit again for an account that
+            // was already authenticated when it arrived here.
             val finish: () -> Unit = {
-                navController.navigate("loading") { popUpTo(0) }
+                navController.navigate("chat_list") { popUpTo(0) }
             }
 
             LaunchedEffect(Unit) {
@@ -671,7 +693,12 @@ fun AppNavigation(intent: android.content.Intent?) {
                 if (userId != null) {
                     com.neveroff.util.SecurePrefs.putString(prefs, "my_user_id", userId)
                 }
-                navController.navigate("loading") { popUpTo(0) }
+                // The session collector routes to chat_list/profile_setup on its own; only
+                // fall back to the spinner if it hasn't moved us off "verify" yet, otherwise
+                // we'd bounce the user back out of the destination it just picked.
+                if (navController.currentDestination?.route == "verify") {
+                    navController.navigate("loading") { popUpTo(0) }
+                }
             })
         }
         composable("chat_list") {

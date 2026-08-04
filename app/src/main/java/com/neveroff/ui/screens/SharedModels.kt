@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -50,8 +48,7 @@ fun formatTime(timestamp: Long): String {
 
 /**
  * Shared backdrop for the auth/onboarding flow (login, OTP, profile setup): a soft
- * vertical gradient with a subtle glow behind the top content, so those screens don't
- * sit on a flat single-color background.
+ * vertical gradient, so those screens don't sit on a flat single-color background.
  */
 @Composable
 fun AuthGradientBackground(content: @Composable BoxScope.() -> Unit) {
@@ -67,21 +64,6 @@ fun AuthGradientBackground(content: @Composable BoxScope.() -> Unit) {
                 )
             )
     ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-140).dp)
-                .size(340.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = CircleShape
-                )
-        )
         content()
     }
 }
