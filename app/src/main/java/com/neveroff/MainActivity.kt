@@ -369,9 +369,13 @@ fun AppNavigation(intent: android.content.Intent?) {
                     // the other half of that: a *different* account signing in
                     // on this device must not inherit the previous one's key or
                     // its decrypted message cache.
-                    if (!com.neveroff.crypto.CryptoManager.canReuseIdentityFor(currentUserId)) {
-                        runCatching { com.neveroff.crypto.CryptoManager.resetKeys(context) }
+                    if (com.neveroff.crypto.CryptoManager.identityKeyBelongsToOtherUser(currentUserId)) {
+                        // Order matters: drop the database while its key still
+                        // works, then destroy the key. Reversed, the delete can
+                        // fail against an open handle and leave a file no
+                        // subsequent key can ever open.
                         runCatching { AppDatabase.resetInstance(context) }
+                        runCatching { com.neveroff.crypto.CryptoManager.resetKeys(context) }
                     }
                     // Adopts a pre-existing key that has no owner recorded, so
                     // users upgrading into this build keep their history rather

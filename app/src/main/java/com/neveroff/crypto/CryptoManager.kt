@@ -264,6 +264,21 @@ object CryptoManager {
     }
 
     private fun generateAndStoreDbKey(): String {
+        // A freshly minted key cannot open a database written under the previous
+        // one. SQLCipher reports that as "file is not a database" and the app
+        // dies on the first query — which is exactly what happened on the very
+        // first launch after registering, when resetKeys had cleared the stored
+        // key material but left the file behind.
+        //
+        // The old caller only deleted the database when *decryption* of the
+        // stored key failed, and missed the case where the key material is gone
+        // entirely. Doing it here covers every route to a new key, because
+        // there is no route to a new key where keeping the old file is correct:
+        // without the old key that file is unreadable regardless.
+        if (this::appContext.isInitialized) {
+            runCatching { appContext.deleteDatabase("neveroff_db") }
+        }
+
         val rawKey = ByteArray(32)
         SecureRandom().nextBytes(rawKey)
         // Encode as hex string for SQLCipher compatibility
@@ -416,19 +431,28 @@ object CryptoManager {
     }
 
     /**
-     * Whether a sign-in as [userId] can keep the stored identity key.
+     * Whether this device holds an identity key belonging to a *different*
+     * account — the only case in which signing in must destroy local state.
      *
-     * Returns true when the key belongs to this account (or predates the owner
-     * being recorded, in which case it is adopted rather than destroyed —
-     * upgrading users must not lose their history to a bookkeeping gap).
+     * Phrased as the positive question deliberately. The previous form asked
+     * whether the key could be reused and answered "no" when there was no key
+     * at all, which is true but useless: the caller read that as "wipe", so a
+     * fresh install registering its first account performed a full key and
+     * database reset it had no reason to. That reset cleared the stored
+     * database key while the freshly created database file survived, and the
+     * next query hit "file is not a database" and took the app down.
+     *
+     * No key stored means nothing to protect against. An unowned key predates
+     * ownership being recorded and is adopted rather than destroyed, so people
+     * upgrading do not lose their history to a bookkeeping gap.
      */
     @Synchronized
-    fun canReuseIdentityFor(userId: String): Boolean {
+    fun identityKeyBelongsToOtherUser(userId: String): Boolean {
         if (!ensurePrefsInitialized()) return false
         val hasKey = prefs.getString("ec_priv_enc", null) != null
         if (!hasKey) return false
         val owner = prefs.getString(KEY_OWNER_UID, null)
-        return owner == null || owner == userId
+        return owner != null && owner != userId
     }
 
     /**
