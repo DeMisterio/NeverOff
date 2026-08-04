@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
@@ -267,9 +271,9 @@ fun ImageEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_cancel), tint = Color.White)
                     }
-                    Text("Edit photo", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.edit_photo), color = Color.White, fontWeight = FontWeight.Bold)
                     IconButton(
                         enabled = sourceBitmap != null && !isSaving,
                         onClick = { isSaving = true }
@@ -277,7 +281,7 @@ fun ImageEditorDialog(
                         if (isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.White)
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.done), tint = Color.White)
                         }
                     }
                 }
@@ -353,11 +357,11 @@ fun ImageEditorDialog(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     IconButton(onClick = { quarterTurns = (quarterTurns + 1) % 4 }) {
-                        Icon(Icons.Default.RotateRight, contentDescription = "Rotate 90°", tint = Color.White)
+                        Icon(Icons.Default.RotateRight, contentDescription = stringResource(R.string.rotate_90), tint = Color.White)
                     }
                     Spacer(modifier = Modifier.width(24.dp))
                     IconButton(onClick = { flipHorizontal = !flipHorizontal }) {
-                        Icon(Icons.Default.Flip, contentDescription = "Flip", tint = Color.White)
+                        Icon(Icons.Default.Flip, contentDescription = stringResource(R.string.flip), tint = Color.White)
                     }
                 }
 

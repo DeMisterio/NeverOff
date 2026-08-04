@@ -375,7 +375,7 @@ fun ChatScreen(
                     title = { Text("${selectedMessages.size} selected", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { selectedMessages.clear() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear Selection")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear_selection))
                         }
                     },
                     actions = {
@@ -399,14 +399,14 @@ fun ChatScreen(
                                     )
                                 }
                             }) {
-                                Icon(Icons.Default.Flag, contentDescription = "Report message")
+                                Icon(Icons.Default.Flag, contentDescription = stringResource(R.string.report_message))
                             }
                         }
                         IconButton(onClick = { showForwardDialog = true }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward")
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(R.string.action_forward))
                         }
                         IconButton(onClick = { showDeleteConfirmDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Range")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_range))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -439,7 +439,7 @@ fun ChatScreen(
                                 if (!remoteProfile?.avatar_url.isNullOrEmpty()) {
                                     coil.compose.SubcomposeAsyncImage(
                                         model = remoteProfile?.avatar_url,
-                                        contentDescription = "Avatar",
+                                        contentDescription = stringResource(R.string.avatar),
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop,
                                         error = { Text(finalRemoteUserName.take(1).uppercase(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
@@ -470,14 +470,14 @@ fun ChatScreen(
                         var showMenu by remember { mutableStateOf(false) }
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
                             }
                             DropdownMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Theme Settings") },
+                                    text = { Text(stringResource(R.string.theme_settings)) },
                                     onClick = {
                                         showMenu = false
                                         showSettingsSheet = true
@@ -586,7 +586,7 @@ fun ChatScreen(
                             onDismissRequest = { showAttachMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Gallery") },
+                                text = { Text(stringResource(R.string.gallery)) },
                                 leadingIcon = { Icon(Icons.Default.AccountBox, contentDescription = null) },
                                 onClick = {
                                     showAttachMenu = false
@@ -594,7 +594,7 @@ fun ChatScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Files") },
+                                text = { Text(stringResource(R.string.files)) },
                                 leadingIcon = { Icon(Icons.Default.Create, contentDescription = null) },
                                 onClick = {
                                     showAttachMenu = false
@@ -607,7 +607,7 @@ fun ChatScreen(
                     if (isRecordingAudio) {
                         AudioRecordingPanel(modifier = Modifier.weight(1f))
                     } else if (isRecordingVideo) {
-                        Text("Recording video...", modifier = Modifier.weight(1f).padding(16.dp))
+                        Text(stringResource(R.string.recording_video), modifier = Modifier.weight(1f).padding(16.dp))
                     } else {
                         OutlinedTextField(
                             value = inputText,
@@ -732,7 +732,7 @@ fun ChatScreen(
                             onDismissRequest = { showSendOptionsMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Send normally") },
+                                text = { Text(stringResource(R.string.send_normally)) },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null) },
                                 onClick = {
                                     showSendOptionsMenu = false
@@ -746,7 +746,7 @@ fun ChatScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Send as Temporary (Disappearing) ⏱️") },
+                                text = { Text(stringResource(R.string.send_as_temporary_disappearing)) },
                                 leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null, tint = Color(0xFFFF5722)) },
                                 onClick = {
                                     showSendOptionsMenu = false
@@ -889,7 +889,7 @@ fun ChatScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
             icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Messages") },
+            title = { Text(stringResource(R.string.delete_messages)) },
             // "Delete for me" was removed: deleting only your own copy leaves the
             // message on the other device, so the person doing the deleting
             // believes it is gone when it is not. On a messenger people reach
@@ -913,12 +913,12 @@ fun ChatScreen(
                         }
                     }
                 }) {
-                    Text("Delete for everyone", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete_for_everyone), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -935,7 +935,7 @@ fun ChatScreen(
 
         AlertDialog(
             onDismissRequest = { showForwardDialog = false },
-            title = { Text("Forward to...") },
+            title = { Text(stringResource(R.string.forward_to_2)) },
             text = {
                 Column(modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
                     availableChats.forEach { chat ->
@@ -976,7 +976,7 @@ fun ChatScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showForwardDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showForwardDialog = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -1100,11 +1100,11 @@ fun ChatScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Box(modifier = Modifier.align(Alignment.Start).clip(RoundedCornerShape(20.dp)).background(currentTheme.otherBubbleColor).padding(horizontal = 16.dp, vertical = 6.dp)) {
-                            Text("Hello!", color = if (isBubbleColorDark(currentTheme.otherBubbleColor)) Color.White else Color.Black, fontSize = textSize.sp)
+                            Text(stringResource(R.string.hello), color = if (isBubbleColorDark(currentTheme.otherBubbleColor)) Color.White else Color.Black, fontSize = textSize.sp)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Box(modifier = Modifier.align(Alignment.End).clip(RoundedCornerShape(20.dp)).background(currentTheme.myBubbleColor).padding(horizontal = 16.dp, vertical = 6.dp)) {
-                            Text("Hey! How are you?", color = if (isBubbleColorDark(currentTheme.myBubbleColor)) Color.White else Color.Black, fontSize = textSize.sp)
+                            Text(stringResource(R.string.hey_how_are_you), color = if (isBubbleColorDark(currentTheme.myBubbleColor)) Color.White else Color.Black, fontSize = textSize.sp)
                         }
                     }
                 }
@@ -1118,7 +1118,7 @@ fun ChatScreen(
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Chat Themes", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.chat_themes), style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = "For this chat",
                     style = MaterialTheme.typography.bodySmall,
@@ -1156,7 +1156,7 @@ fun ChatScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Wallpaper Brightness", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.wallpaper_brightness), style = MaterialTheme.typography.titleMedium)
                 Slider(
                     value = wallpaperBrightness,
                     onValueChange = { SettingsManager.setWallpaperBrightness(it) },
@@ -1348,7 +1348,7 @@ fun MessageBubble(
                 if (isSelected) {
                     Icon(
                         Icons.Default.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.selected),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -1366,7 +1366,7 @@ fun MessageBubble(
             if (dampedOffsetX > 5f && !isSelectionMode) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Reply",
+                    contentDescription = stringResource(R.string.reply),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = replyIconAlpha),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -1445,7 +1445,7 @@ fun MessageBubble(
                     ) {
                         Icon(
                             Icons.Default.Timer,
-                            contentDescription = "Temporary message",
+                            contentDescription = stringResource(R.string.temporary_message),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(12.dp)
                         )
@@ -1465,7 +1465,7 @@ fun MessageBubble(
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = "Forwarded",
+                            contentDescription = stringResource(R.string.forward_sent),
                             tint = labelColor,
                             modifier = Modifier.size(12.dp)
                         )
@@ -1525,9 +1525,9 @@ fun MessageBubble(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Lock, "Locked", tint = contentTextColor)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Locked Message", color = contentTextColor)
+                        Text(stringResource(R.string.locked_message), color = contentTextColor)
                     }
-                    TextButton(onClick = { passwordDialogOpen = true }) { Text("Unlock", color = contentTextColor) }
+                    TextButton(onClick = { passwordDialogOpen = true }) { Text(stringResource(R.string.unlock), color = contentTextColor) }
                 } else if (isCircleNote) {
                     // Thin ring hugging the note, standing in for the bubble outline.
                     Box(
@@ -1573,7 +1573,7 @@ fun MessageBubble(
                                 if (msg.isForwarded) {
                                     Icon(
                                         Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = "Forwarded",
+                                        contentDescription = stringResource(R.string.forward_sent),
                                         tint = labelColor,
                                         modifier = Modifier.size(10.dp)
                                     )
@@ -1673,11 +1673,11 @@ fun MessageBubble(
         Dialog(onDismissRequest = { passwordDialogOpen = false }) {
             Surface(shape = RoundedCornerShape(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Enter Password")
+                    Text(stringResource(R.string.enter_password))
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = pwdInput, onValueChange = { pwdInput = it }, singleLine = true)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { isPasswordUnlocked = true; passwordDialogOpen = false }) { Text("Unlock") }
+                    Button(onClick = { isPasswordUnlocked = true; passwordDialogOpen = false }) { Text(stringResource(R.string.unlock)) }
                 }
             }
         }

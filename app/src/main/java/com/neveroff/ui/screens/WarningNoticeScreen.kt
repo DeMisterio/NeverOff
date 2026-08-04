@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -271,7 +275,7 @@ fun WarningNoticeScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("I understand")
+                    Text(stringResource(R.string.i_understand))
                 }
             }
 
@@ -283,13 +287,13 @@ fun WarningNoticeScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(14.dp)
-            ) { Text("Contact @support") }
+            ) { Text(stringResource(R.string.contact_support)) }
 
             if (failed) {
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onDefer, modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        "Continue without confirming",
+                        stringResource(R.string.continue_without_confirming),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
                 }

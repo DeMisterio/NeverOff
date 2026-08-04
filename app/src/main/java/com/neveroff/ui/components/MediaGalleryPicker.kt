@@ -2,6 +2,10 @@
 
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.Manifest
 import android.content.ContentUris
 import android.content.pm.PackageManager
@@ -236,7 +240,7 @@ private fun GridStage(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_cancel), tint = Color.White)
             }
             Text(
                 text = if (selected.isEmpty()) "Select media" else "${selected.size} selected",
@@ -253,11 +257,11 @@ private fun GridStage(
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("NeverOff needs access to your photos and videos to show them here.", color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text(stringResource(R.string.neveroff_needs_access_to_your_photos), color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("You can grant this in system settings.", color = Color.White.copy(alpha = 0.7f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text(stringResource(R.string.you_can_grant_this_in_system), color = Color.White.copy(alpha = 0.7f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
-                media.isEmpty() -> Text("No photos or videos found", color = Color.White, modifier = Modifier.align(Alignment.Center))
+                media.isEmpty() -> Text(stringResource(R.string.no_photos_or_videos_found), color = Color.White, modifier = Modifier.align(Alignment.Center))
                 else -> LazyVerticalGrid(
                     columns = GridCells.Fixed(4),
                     modifier = Modifier.fillMaxSize()
@@ -277,7 +281,7 @@ private fun GridStage(
                                 VideoThumbnail(uri = item.uri, modifier = Modifier.fillMaxSize())
                                 Icon(
                                     Icons.Default.PlayArrow,
-                                    contentDescription = "Video",
+                                    contentDescription = stringResource(R.string.video),
                                     tint = Color.White,
                                     modifier = Modifier.align(Alignment.Center).size(28.dp)
                                 )
@@ -362,7 +366,7 @@ private fun PreviewStage(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.Close, contentDescription = "Back to selection", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.back_to_selection), tint = Color.White)
             }
             Text("${items.size} item${if (items.size == 1) "" else "s"}", color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.size(48.dp))
@@ -401,12 +405,12 @@ private fun PreviewStage(
             val currentItem = items.getOrNull(currentIndex)
             if (currentItem != null && !currentItem.source.isVideo) {
                 IconButton(onClick = { onEdit(currentIndex) }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit), tint = Color.White)
                 }
                 Spacer(modifier = Modifier.width(24.dp))
             }
             IconButton(onClick = { onRemove(currentIndex) }) {
-                Icon(Icons.Default.Delete, contentDescription = "Remove", tint = Color.White)
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.remove), tint = Color.White)
             }
         }
 
@@ -416,7 +420,7 @@ private fun PreviewStage(
         ) {
             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Send")
+            Text(stringResource(R.string.send))
         }
     }
 }

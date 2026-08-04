@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -108,7 +112,7 @@ fun SupportScreen(
                                 Stage.THREAD -> { openTicket = null; stage = Stage.LIST }
                             }
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     }
                 }
@@ -127,19 +131,19 @@ fun SupportScreen(
                         onClick = { stage = Stage.PICK_CATEGORY },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
-                    ) { Text("Start a new conversation") }
+                    ) { Text(stringResource(R.string.start_a_new_conversation)) }
 
                     Spacer(Modifier.height(20.dp))
 
                     if (tickets.isEmpty()) {
                         Text(
-                            "You have no support conversations yet.",
+                            stringResource(R.string.you_have_no_support_conversations_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     } else {
                         Text(
-                            "Your conversations",
+                            stringResource(R.string.your_conversations),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium
                         )
@@ -169,7 +173,7 @@ fun SupportScreen(
                                                 modifier = Modifier.weight(1f)
                                             )
                                             if (ticket.awaitingYou) {
-                                                Badge { Text("Your turn") }
+                                                Badge { Text(stringResource(R.string.your_turn)) }
                                             }
                                         }
                                         Spacer(Modifier.height(2.dp))
@@ -191,7 +195,7 @@ fun SupportScreen(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
                 ) {
                     Text(
-                        "What do you need help with?",
+                        stringResource(R.string.what_do_you_need_help_with),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -231,7 +235,7 @@ fun SupportScreen(
                     val receipt = lastReceipt
                     if (receipt != null) {
                         Text(
-                            "We have got it",
+                            stringResource(R.string.we_have_got_it),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -252,7 +256,7 @@ fun SupportScreen(
                             },
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(14.dp)
-                        ) { Text("Done") }
+                        ) { Text(stringResource(R.string.done)) }
                     } else {
                         // Crisis resources come before the form, not after it.
                         if (isEmergencySelected) {
@@ -262,14 +266,14 @@ fun SupportScreen(
                             ) {
                                 Column(Modifier.padding(16.dp)) {
                                     Text(
-                                        "If someone is in immediate danger",
+                                        stringResource(R.string.if_someone_is_in_immediate_danger),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onErrorContainer
                                     )
                                     Spacer(Modifier.height(6.dp))
                                     Text(
-                                        "Please contact your local emergency services. They can " +
+                                        stringResource(R.string.please_contact_your_local_emergency_services) +
                                             "reach someone far faster than we can. We will still " +
                                             "read what you send here, and a person — not an " +
                                             "automated system — will look at it urgently.",
@@ -281,7 +285,7 @@ fun SupportScreen(
                                         runCatching {
                                             uriHandler.openUri("https://neveroff.app/help/crisis")
                                         }
-                                    }) { Text("Find support near you") }
+                                    }) { Text(stringResource(R.string.find_support_near_you)) }
                                 }
                             }
                             Spacer(Modifier.height(16.dp))
@@ -291,7 +295,7 @@ fun SupportScreen(
                             value = subject,
                             onValueChange = { if (it.length <= 200) subject = it },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Summary") },
+                            label = { Text(stringResource(R.string.summary)) },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -300,13 +304,13 @@ fun SupportScreen(
                             value = body,
                             onValueChange = { if (it.length <= 10000) body = it },
                             modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
-                            label = { Text("What happened?") },
+                            label = { Text(stringResource(R.string.what_happened)) },
                             shape = RoundedCornerShape(12.dp)
                         )
 
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Unlike your chats, support messages are not end-to-end encrypted — " +
+                            stringResource(R.string.unlike_your_chats_support_messages_are) +
                                 "an agent has to be able to read them in order to help. Please " +
                                 "do not include passwords or codes.",
                             style = MaterialTheme.typography.bodySmall,
@@ -350,7 +354,7 @@ fun SupportScreen(
                                     modifier = Modifier.size(18.dp), strokeWidth = 2.dp,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
-                            } else Text("Send")
+                            } else Text(stringResource(R.string.send))
                         }
                     }
                 }
@@ -394,7 +398,7 @@ fun SupportScreen(
                     val ticket = openTicket
                     if (ticket != null && ticket.status == "closed") {
                         Text(
-                            "This conversation is closed. Start a new one if you need more help.",
+                            stringResource(R.string.this_conversation_is_closed_start_a),
                             modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -408,7 +412,7 @@ fun SupportScreen(
                                 value = reply,
                                 onValueChange = { if (it.length <= 10000) reply = it },
                                 modifier = Modifier.weight(1f),
-                                placeholder = { Text("Reply") },
+                                placeholder = { Text(stringResource(R.string.reply)) },
                                 shape = RoundedCornerShape(20.dp)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -430,7 +434,7 @@ fun SupportScreen(
                                 },
                                 enabled = reply.isNotBlank()
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.send))
                             }
                         }
                     }
@@ -444,7 +448,7 @@ fun SupportScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("Was this helpful?", style = MaterialTheme.typography.bodyMedium)
+                                Text(stringResource(R.string.was_this_helpful), style = MaterialTheme.typography.bodyMedium)
                                 Spacer(Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     (1..5).forEach { score ->

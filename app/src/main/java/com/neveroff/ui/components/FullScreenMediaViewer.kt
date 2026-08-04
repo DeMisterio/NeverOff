@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
@@ -95,7 +99,7 @@ fun FullScreenMediaViewer(
         } else {
             AsyncImage(
                 model = uri,
-                contentDescription = "Full Screen Image",
+                contentDescription = stringResource(R.string.full_screen_image),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
@@ -125,17 +129,17 @@ fun FullScreenMediaViewer(
             title = { Text("") },
             navigationIcon = {
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
                 }
             },
             actions = {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.White)
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.menu), tint = Color.White)
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("Reply") }, onClick = { showMenu = false; onReply() })
-                    DropdownMenuItem(text = { Text("Delete") }, onClick = { showMenu = false; showDeleteConfirm = true })
-                    DropdownMenuItem(text = { Text("Save to Gallery") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.reply)) }, onClick = { showMenu = false; onReply() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = { showMenu = false; showDeleteConfirm = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.save_to_gallery)) }, onClick = {
                         showMenu = false
                         scope.launch {
                             val success = saveMediaToGallery(context, uri, isVideo)
@@ -163,29 +167,29 @@ fun FullScreenMediaViewer(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = Color.White)
             }
             IconButton(onClick = onForward) {
-                Icon(Icons.Default.Share, contentDescription = "Forward", tint = Color.White)
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.action_forward), tint = Color.White)
             }
         }
 
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("Delete message?") },
-                text = { Text("This will delete the message for everyone. This can't be undone.") },
+                title = { Text(stringResource(R.string.delete_message)) },
+                text = { Text(stringResource(R.string.this_will_delete_the_message_for)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteConfirm = false
                         onDelete()
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )

@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -80,7 +84,7 @@ fun ReportDialog(
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                         Spacer(Modifier.width(8.dp))
                     }
@@ -167,7 +171,7 @@ fun ReportDialog(
                                 value = note,
                                 onValueChange = { if (it.length <= 2000) note = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Anything else we should know? (optional)") },
+                                label = { Text(stringResource(R.string.anything_else_we_should_know_optional)) },
                                 minLines = 3,
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -276,7 +280,7 @@ fun ReportDialog(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp)
-                    ) { Text("Done") }
+                    ) { Text(stringResource(R.string.done)) }
                 } else if (reason != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(
@@ -284,7 +288,7 @@ fun ReportDialog(
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             enabled = !submitting
-                        ) { Text("Cancel") }
+                        ) { Text(stringResource(R.string.action_cancel)) }
 
                         Button(
                             onClick = {
@@ -321,13 +325,13 @@ fun ReportDialog(
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             } else {
-                                Text("Send report")
+                                Text(stringResource(R.string.send_report))
                             }
                         }
                     }
                 } else {
                     TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             }

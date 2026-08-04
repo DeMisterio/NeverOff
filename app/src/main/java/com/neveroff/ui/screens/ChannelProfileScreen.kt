@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -129,7 +133,7 @@ fun ChannelProfileScreen(
                         ) {
                             Icon(
                                 Icons.Default.Settings,
-                                contentDescription = "Channel settings",
+                                contentDescription = stringResource(R.string.channel_settings),
                                 tint = Color.White
                             )
                         }
@@ -152,7 +156,7 @@ fun ChannelProfileScreen(
                                 if (!current.isPublic) {
                                     Icon(
                                         Icons.Default.Lock,
-                                        contentDescription = "Private channel",
+                                        contentDescription = stringResource(R.string.private_channel),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(13.dp)
                                     )
@@ -184,7 +188,7 @@ fun ChannelProfileScreen(
                         modifier = Modifier.fillMaxWidth().clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(
-                                ClipData.newPlainText("channel link", ChannelLinkScheme.linkFor(current.username))
+                                ClipData.newPlainText(context.getString(R.string.channel_link), ChannelLinkScheme.linkFor(current.username))
                             )
                             com.neveroff.ui.components.AppToast.success("Link copied — paste it in any chat")
                         }
@@ -201,7 +205,7 @@ fun ChannelProfileScreen(
                             )
                             Icon(
                                 Icons.Default.ContentCopy,
-                                contentDescription = "Copy link",
+                                contentDescription = stringResource(R.string.copy_link),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -273,7 +277,7 @@ fun ChannelProfileScreen(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = Color.White
                 )
             }

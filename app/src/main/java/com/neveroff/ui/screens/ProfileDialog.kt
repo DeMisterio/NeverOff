@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.net.Uri
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.activity.result.PickVisualMediaRequest
@@ -97,7 +101,7 @@ fun ProfileDialog(
 
         if (profile == null) {
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Text("Профиль не найден")
+                Text(stringResource(R.string.profile_not_found))
             }
             return@ModalBottomSheet
         }
@@ -135,7 +139,7 @@ fun ProfileDialog(
                     if (profile!!.avatar_url != null) {
                         AsyncImage(
                             model = profile!!.avatar_url,
-                            contentDescription = "Avatar",
+                            contentDescription = stringResource(R.string.avatar),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -168,7 +172,7 @@ fun ProfileDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Change Avatar",
+                            contentDescription = stringResource(R.string.change_avatar),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(20.dp)
                         )
@@ -207,7 +211,7 @@ fun ProfileDialog(
                     ) {
                         AsyncImage(
                             model = profile!!.avatar_url,
-                            contentDescription = "Full Screen Avatar",
+                            contentDescription = stringResource(R.string.full_screen_avatar),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
@@ -241,7 +245,7 @@ fun ProfileDialog(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 onClick = {
                     val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("username", "@${profile!!.username}")
+                    val clip = android.content.ClipData.newPlainText(context.getString(R.string.username), "@${profile!!.username}")
                     clipboardManager.setPrimaryClip(clip)
                     com.neveroff.ui.components.AppToast.success("Юзернейм скопирован")
                 }

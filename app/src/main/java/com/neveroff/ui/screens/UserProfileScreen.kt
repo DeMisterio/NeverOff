@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -82,7 +86,7 @@ fun UserProfileScreen(
                     if (profile.avatar_url != null) {
                         AsyncImage(
                             model = profile.avatar_url,
-                            contentDescription = "Avatar",
+                            contentDescription = stringResource(R.string.avatar),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clickable { isFullScreenViewerOpen = true },
@@ -150,11 +154,11 @@ fun UserProfileScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_profile), tint = MaterialTheme.colorScheme.primary)
                                 }
                                 Box(modifier = Modifier.width(1.dp).height(20.dp).background(MaterialTheme.colorScheme.outlineVariant))
                                 IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp)) {
-                                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.title_settings), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
@@ -173,7 +177,7 @@ fun UserProfileScreen(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier.fillMaxWidth().clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("username", "@${profile.username}")
+                            val clip = ClipData.newPlainText(context.getString(R.string.username), "@${profile.username}")
                             clipboard.setPrimaryClip(clip)
                             com.neveroff.ui.components.AppToast.success("Username copied")
                         }
@@ -222,7 +226,7 @@ fun UserProfileScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = Color.White
                 )
             }
@@ -239,7 +243,7 @@ fun UserProfileScreen(
                     ) {
                         AsyncImage(
                             model = profile.avatar_url,
-                            contentDescription = "Full Avatar",
+                            contentDescription = stringResource(R.string.full_avatar),
                             modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                             contentScale = ContentScale.Fit
                         )

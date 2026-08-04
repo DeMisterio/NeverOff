@@ -1,5 +1,7 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -180,31 +182,32 @@ fun ChannelScreen(
                     },
                     navigationIcon = {
                         BounceIconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     actions = {
                         var showMenu by remember { mutableStateOf(false) }
-                        val clipboard = LocalContext.current
+                        val menuContext = LocalContext.current
+                        val clipboard = menuContext
                             .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Copy link") },
+                                    text = { Text(stringResource(R.string.copy_link)) },
                                     onClick = {
                                         showMenu = false
                                         val link = ChannelLinkScheme.linkFor(channel?.username.orEmpty())
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("channel link", link))
+                                        clipboard.setPrimaryClip(ClipData.newPlainText(menuContext.getString(R.string.channel_link), link))
                                         com.neveroff.ui.components.AppToast.success(
                                             "Link copied — paste it in any chat"
                                         )
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Channel info") },
+                                    text = { Text(stringResource(R.string.channel_info)) },
                                     onClick = {
                                         showMenu = false
                                         onOpenProfile(channelId)
@@ -212,7 +215,7 @@ fun ChannelScreen(
                                 )
                                 if (isOwner) {
                                     DropdownMenuItem(
-                                        text = { Text("Settings") },
+                                        text = { Text(stringResource(R.string.title_settings)) },
                                         onClick = {
                                             showMenu = false
                                             onOpenSettings(channelId)
@@ -221,7 +224,7 @@ fun ChannelScreen(
                                 } else {
                                     if (channel?.isSubscribed == true) {
                                         DropdownMenuItem(
-                                            text = { Text("Unsubscribe") },
+                                            text = { Text(stringResource(R.string.unsubscribe)) },
                                             onClick = {
                                                 showMenu = false
                                                 viewModel.unsubscribe()
@@ -230,7 +233,7 @@ fun ChannelScreen(
                                     }
                                     DropdownMenuItem(
                                         text = {
-                                            Text("Remove from my list", color = MaterialTheme.colorScheme.error)
+                                            Text(stringResource(R.string.remove_from_my_list), color = MaterialTheme.colorScheme.error)
                                         },
                                         onClick = {
                                             showMenu = false
@@ -475,7 +478,7 @@ private fun PostComposer(
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
             shape = CircleShape,
-            placeholder = { Text("Write a post") },
+            placeholder = { Text(stringResource(R.string.write_a_post)) },
             singleLine = false,
             maxLines = 5,
             colors = OutlinedTextFieldDefaults.colors(
@@ -503,7 +506,7 @@ private fun PostComposer(
                 } else {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Publish post",
+                        contentDescription = stringResource(R.string.publish_post),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp)
                     )

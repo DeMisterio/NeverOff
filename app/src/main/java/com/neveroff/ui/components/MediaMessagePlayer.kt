@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -194,14 +198,14 @@ fun MediaMessagePlayer(
     if (localFileUri == null) {
         Box(modifier = modifier.padding(16.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Ошибка загрузки", color = textColor)
+                Text(stringResource(R.string.load_failed), color = textColor)
                 Spacer(Modifier.height(8.dp))
                 androidx.compose.material3.TextButton(onClick = { 
                     isDownloading = true
                     downloadProgress = 0f
                     retryTrigger++ 
                 }) {
-                    Text("Повторить", color = textColor)
+                    Text(stringResource(R.string.action_retry), color = textColor)
                 }
             }
         }
@@ -295,7 +299,7 @@ fun MediaMessagePlayer(
     } else if (messageText.startsWith("[IMAGE]")) {
         AsyncImage(
             model = localFileUri,
-            contentDescription = "Изображение",
+            contentDescription = stringResource(R.string.label_image),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = modifier
                 .fillMaxWidth()
@@ -322,7 +326,7 @@ fun MediaMessagePlayer(
             ) {
                 Icon(
                     painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_save),
-                    contentDescription = "File",
+                    contentDescription = stringResource(R.string.file),
                     tint = textColor
                 )
             }
@@ -398,7 +402,7 @@ private fun VoiceMessageContent(
             } else {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
+                    contentDescription = stringResource(R.string.play),
                     tint = textColor
                 )
             }

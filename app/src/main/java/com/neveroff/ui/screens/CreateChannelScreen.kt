@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -146,7 +150,7 @@ fun CreateChannelScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { if (step == 0) onBack() else step = 0 }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -269,7 +273,7 @@ fun CreateChannelScreen(
     if (showPlatformPicker) {
         AlertDialog(
             onDismissRequest = { showPlatformPicker = false },
-            title = { Text("Add a link") },
+            title = { Text(stringResource(R.string.add_a_link)) },
             text = {
                 Column {
                     SocialPlatform.entries.forEach { platform ->
@@ -293,7 +297,7 @@ fun CreateChannelScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPlatformPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPlatformPicker = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -359,14 +363,14 @@ private fun ChannelDetailsStep(
                 if (avatarBitmap != null) {
                     androidx.compose.foundation.Image(
                         bitmap = avatarBitmap.asImageBitmap(),
-                        contentDescription = "Channel picture",
+                        contentDescription = stringResource(R.string.channel_picture),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                 } else {
                     Icon(
                         Icons.Default.PhotoCamera,
-                        contentDescription = "Add a channel picture",
+                        contentDescription = stringResource(R.string.add_a_channel_picture),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(26.dp)
                     )
@@ -379,7 +383,7 @@ private fun ChannelDetailsStep(
                 value = name,
                 onValueChange = onNameChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Channel name") },
+                placeholder = { Text(stringResource(R.string.channel_name)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -401,7 +405,7 @@ private fun ChannelDetailsStep(
             value = description,
             onValueChange = onDescriptionChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("What is this channel about?") },
+            placeholder = { Text(stringResource(R.string.what_is_this_channel_about)) },
             minLines = 3,
             maxLines = 6,
             shape = RoundedCornerShape(14.dp),
@@ -435,7 +439,7 @@ private fun ChannelDetailsStep(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "Add a social link",
+                        contentDescription = stringResource(R.string.add_a_social_link),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
                     )
@@ -549,7 +553,7 @@ private fun ChannelSettingsStep(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                placeholder = { Text("my_channel") },
+                placeholder = { Text(stringResource(R.string.my_channel)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 isError = usernameState == UsernameState.TAKEN,
@@ -561,12 +565,12 @@ private fun ChannelSettingsStep(
                         )
                         UsernameState.AVAILABLE -> Icon(
                             Icons.Default.Check,
-                            contentDescription = "Link is available",
+                            contentDescription = stringResource(R.string.link_is_available),
                             tint = Color(0xFF4CAF50)
                         )
                         UsernameState.TAKEN -> Icon(
                             Icons.Default.Close,
-                            contentDescription = "Link is taken",
+                            contentDescription = stringResource(R.string.link_is_taken),
                             tint = MaterialTheme.colorScheme.error
                         )
                         else -> {}
@@ -668,7 +672,7 @@ private fun VisibilityOption(
             if (selected) {
                 Icon(
                     Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.selected),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )

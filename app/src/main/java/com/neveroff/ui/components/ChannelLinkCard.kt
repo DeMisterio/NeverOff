@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -110,7 +114,7 @@ fun ChannelLinkCard(
                         if (resolved?.is_public == false) {
                             Icon(
                                 Icons.Default.Lock,
-                                contentDescription = "Private channel",
+                                contentDescription = stringResource(R.string.private_channel),
                                 tint = contentColor.copy(alpha = 0.7f),
                                 modifier = Modifier.size(11.dp)
                             )

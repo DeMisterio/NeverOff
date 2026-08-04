@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -101,7 +105,7 @@ fun LanguagePickerScreen(onChosen: (AppLanguage.Language) -> Unit) {
                         if (isSelected) {
                             Icon(
                                 Icons.Default.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.selected),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

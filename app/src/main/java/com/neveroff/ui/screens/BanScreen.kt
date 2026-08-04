@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -194,7 +198,7 @@ fun BanScreen(
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Appeal this decision")
+                        Text(stringResource(R.string.appeal_this_decision))
                     }
                 }
 
@@ -216,7 +220,7 @@ fun BanScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
-                            placeholder = { Text("Explain what happened") },
+                            placeholder = { Text(stringResource(R.string.explain_what_happened)) },
                             supportingText = { Text("${appealText.length} / 5000") },
                             isError = submitError != null,
                             shape = RoundedCornerShape(14.dp)
@@ -238,7 +242,7 @@ fun BanScreen(
                                 modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(14.dp),
                                 enabled = !submitting
-                            ) { Text("Cancel") }
+                            ) { Text(stringResource(R.string.action_cancel)) }
 
                             Button(
                                 onClick = {
@@ -279,7 +283,7 @@ fun BanScreen(
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 } else {
-                                    Text("Submit appeal")
+                                    Text(stringResource(R.string.submit_appeal))
                                 }
                             }
                         }
@@ -308,17 +312,17 @@ fun BanScreen(
                 onClick = onOpenSupport,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(14.dp)
-            ) { Text("Contact @support") }
+            ) { Text(stringResource(R.string.contact_support)) }
 
             Spacer(Modifier.height(12.dp))
 
             TextButton(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) {
-                Text("Check again")
+                Text(stringResource(R.string.check_again))
             }
 
             TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "Sign out",
+                    stringResource(R.string.sign_out),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
             }

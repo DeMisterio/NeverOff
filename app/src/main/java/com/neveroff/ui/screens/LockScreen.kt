@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.biometric.BiometricManager
@@ -240,12 +244,12 @@ fun LockScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             TextButton(onClick = onCancel) {
-                Text("Отмена", color = MaterialTheme.colorScheme.onBackground)
+                Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onBackground)
             }
 
             if (mode == LockMode.UNLOCK || mode == LockMode.DISABLE) {
                 TextButton(onClick = { showEraseDialog = true }) {
-                    Text("Забыли пароль? Стереть чат", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.forgot_password_erase), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -253,19 +257,19 @@ fun LockScreen(
         if (showEraseDialog) {
             AlertDialog(
                 onDismissRequest = { showEraseDialog = false },
-                title = { Text("Стереть чат?") },
-                text = { Text("Это удалит всю историю переписки с вашего устройства (только для вас). Восстановить будет невозможно.") },
+                title = { Text(stringResource(R.string.erase_chat_question)) },
+                text = { Text(stringResource(R.string.erase_chat_warning)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showEraseDialog = false
                         onEraseChat()
                     }) {
-                        Text("Стереть", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_erase), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showEraseDialog = false }) {
-                        Text("Отмена")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -300,9 +304,9 @@ fun NumpadButton(text: String, showBiometric: Boolean, onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         if (text == "del") {
-            Icon(Icons.Default.Clear, contentDescription = "Backspace", tint = MaterialTheme.colorScheme.onSurface)
+            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.backspace), tint = MaterialTheme.colorScheme.onSurface)
         } else if (text == "bio") {
-            Icon(Icons.Default.Face, contentDescription = "Biometric", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Face, contentDescription = stringResource(R.string.biometric), tint = MaterialTheme.colorScheme.primary)
         } else {
             Text(
                 text = text,
@@ -334,9 +338,9 @@ private fun promptBiometric(context: Context, onSuccess: () -> Unit, onError: ()
         })
 
     val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Разблокировка чата")
-        .setSubtitle("Приложите палец или посмотрите в камеру")
-        .setNegativeButtonText("Использовать PIN")
+        .setTitle(context.getString(R.string.biometric_unlock_title))
+        .setSubtitle(context.getString(R.string.biometric_unlock_subtitle))
+        .setNegativeButtonText(context.getString(R.string.use_pin))
         .build()
 
     biometricPrompt.authenticate(promptInfo)

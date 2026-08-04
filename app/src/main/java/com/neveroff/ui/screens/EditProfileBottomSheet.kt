@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -76,7 +80,7 @@ fun EditProfileBottomSheet(
                 if (profile.avatar_url != null) {
                     AsyncImage(
                         model = profile.avatar_url,
-                        contentDescription = "Avatar",
+                        contentDescription = stringResource(R.string.avatar),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -105,7 +109,7 @@ fun EditProfileBottomSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "Change Avatar",
+                        contentDescription = stringResource(R.string.change_avatar),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
@@ -117,7 +121,7 @@ fun EditProfileBottomSheet(
             OutlinedTextField(
                 value = displayName,
                 onValueChange = { displayName = it },
-                label = { Text("Имя") },
+                label = { Text(stringResource(R.string.label_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -127,7 +131,7 @@ fun EditProfileBottomSheet(
             OutlinedTextField(
                 value = bio,
                 onValueChange = { bio = it },
-                label = { Text("О себе") },
+                label = { Text(stringResource(R.string.label_about)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5
@@ -142,7 +146,7 @@ fun EditProfileBottomSheet(
                     .heightIn(min = 50.dp),
                 enabled = displayName.isNotBlank()
             ) {
-                Text("Сохранить", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
             }
         }
     }

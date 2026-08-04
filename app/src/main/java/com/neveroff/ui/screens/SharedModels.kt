@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -112,24 +116,24 @@ fun StatusTicks(status: Int, color: Color = MaterialTheme.colorScheme.onSurfaceV
             // Failed to send
             Icon(
                 Icons.Default.Warning,
-                contentDescription = "Failed to send — tap to retry",
+                contentDescription = stringResource(R.string.failed_to_send_tap_to_retry),
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(14.dp)
             )
         }
         status >= 2 -> {
             // Read: double green ticks
-            Icon(Icons.Default.Done, contentDescription = "Read", tint = Color(0xFF4CAF50), modifier = Modifier.size(14.dp).offset(x = 4.dp))
+            Icon(Icons.Default.Done, contentDescription = stringResource(R.string.read), tint = Color(0xFF4CAF50), modifier = Modifier.size(14.dp).offset(x = 4.dp))
             Icon(Icons.Default.Done, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(14.dp))
         }
         status == 1 -> {
             // Delivered: double gray ticks
-            Icon(Icons.Default.Done, contentDescription = "Delivered", tint = color, modifier = Modifier.size(14.dp).offset(x = 4.dp))
+            Icon(Icons.Default.Done, contentDescription = stringResource(R.string.delivered), tint = color, modifier = Modifier.size(14.dp).offset(x = 4.dp))
             Icon(Icons.Default.Done, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
         }
         else -> {
             // Sent: single gray tick
-            Icon(Icons.Default.Done, contentDescription = "Sent", tint = color, modifier = Modifier.size(14.dp))
+            Icon(Icons.Default.Done, contentDescription = stringResource(R.string.sent), tint = color, modifier = Modifier.size(14.dp))
         }
     }
     }

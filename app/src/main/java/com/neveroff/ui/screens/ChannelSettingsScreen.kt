@@ -1,5 +1,9 @@
 package com.neveroff.ui.screens
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -131,10 +135,10 @@ fun ChannelSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Channel settings", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.channel_settings), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -169,7 +173,7 @@ fun ChannelSettingsScreen(
                         if (bitmap != null) {
                             androidx.compose.foundation.Image(
                                 bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "Channel picture",
+                                contentDescription = stringResource(R.string.channel_picture),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                             )
@@ -191,7 +195,7 @@ fun ChannelSettingsScreen(
                         ) {
                             Icon(
                                 Icons.Default.PhotoCamera,
-                                contentDescription = "Change picture",
+                                contentDescription = stringResource(R.string.change_picture),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(14.dp)
                             )
@@ -318,7 +322,7 @@ fun ChannelSettingsScreen(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Add a social link",
+                                contentDescription = stringResource(R.string.add_a_social_link),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -421,7 +425,7 @@ fun ChannelSettingsScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("Save changes", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.save_changes), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -431,7 +435,7 @@ fun ChannelSettingsScreen(
     if (showPlatformPicker) {
         AlertDialog(
             onDismissRequest = { showPlatformPicker = false },
-            title = { Text("Add a link") },
+            title = { Text(stringResource(R.string.add_a_link)) },
             text = {
                 Column {
                     SocialPlatform.entries.forEach { platform ->
@@ -456,7 +460,7 @@ fun ChannelSettingsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPlatformPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPlatformPicker = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -494,7 +498,7 @@ private fun ReactionChooser(selected: List<String>, onToggle: (String) -> Unit) 
                     if (isOn) {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = "Allowed",
+                            contentDescription = stringResource(R.string.allowed),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)

@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -185,7 +189,7 @@ fun ChannelPostItem(
                         Spacer(Modifier.width(6.dp))
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = "Failed to publish",
+                            contentDescription = stringResource(R.string.failed_to_publish),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(12.dp)
                         )
@@ -195,7 +199,7 @@ fun ChannelPostItem(
 
                     Icon(
                         Icons.Default.RemoveRedEye,
-                        contentDescription = "Views",
+                        contentDescription = stringResource(R.string.views),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(13.dp)
                     )
@@ -283,18 +287,18 @@ fun ChannelPostItem(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete post?") },
-            text = { Text("This removes the post for everyone who follows the channel.") },
+            title = { Text(stringResource(R.string.delete_post)) },
+            text = { Text(stringResource(R.string.this_removes_the_post_for_everyone)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
                     onDelete()
                 }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -407,7 +411,7 @@ private fun AddReactionPill(onClick: () -> Unit) {
         ) {
             Icon(
                 Icons.Default.AddReaction,
-                contentDescription = "Pick a reaction",
+                contentDescription = stringResource(R.string.pick_a_reaction),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp)
             )

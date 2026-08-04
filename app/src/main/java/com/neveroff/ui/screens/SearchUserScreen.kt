@@ -118,7 +118,7 @@ fun SearchUserScreen(
                 title = { Text(stringResource(R.string.title_search_users)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -229,7 +229,7 @@ fun SearchUserScreen(
                                             .padding(end = 16.dp),
                                         contentAlignment = Alignment.CenterEnd
                                     ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = Color.White)
                                     }
                                 },
                                 content = {
@@ -353,7 +353,7 @@ private fun SupportListItem(onClick: () -> Unit) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         Icons.Default.Verified,
-                        contentDescription = "Official",
+                        contentDescription = stringResource(R.string.official),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
@@ -496,7 +496,7 @@ fun UserListItem(displayName: String, username: String, avatarUrl: String?, onCl
             if (avatarUrl != null) {
                 AsyncImage(
                     model = avatarUrl,
-                    contentDescription = "Avatar",
+                    contentDescription = stringResource(R.string.avatar),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )

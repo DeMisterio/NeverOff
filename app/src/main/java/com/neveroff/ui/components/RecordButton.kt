@@ -1,5 +1,7 @@
 package com.neveroff.ui.components
 
+import androidx.compose.ui.res.stringResource
+
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -211,18 +213,18 @@ fun RecordButton(
             when (state) {
                 "SEND" -> Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = stringResource(R.string.send),
                     tint = iconColor,
                     modifier = Modifier.padding(start = 4.dp)
                 )
                 "MIC" -> Icon(
                     painter = painterResource(id = android.R.drawable.ic_btn_speak_now),
-                    contentDescription = "Mic",
+                    contentDescription = stringResource(R.string.mic),
                     tint = iconColor
                 )
                 "CAM" -> Icon(
                     painter = painterResource(id = android.R.drawable.ic_menu_camera),
-                    contentDescription = "Camera",
+                    contentDescription = stringResource(R.string.camera),
                     tint = iconColor
                 )
             }

@@ -221,7 +221,7 @@ fun ChatListScreen(
                                 if (!currentProfile.avatar_url.isNullOrEmpty()) {
                                     coil.compose.SubcomposeAsyncImage(
                                         model = currentProfile?.avatar_url,
-                                        contentDescription = "My Avatar",
+                                        contentDescription = stringResource(R.string.my_avatar),
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                         error = {
@@ -258,7 +258,7 @@ fun ChatListScreen(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Find people or create a channel",
+                                contentDescription = stringResource(R.string.find_people_or_create_a_channel),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -276,7 +276,7 @@ fun ChatListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Search") },
+                    placeholder = { Text(stringResource(R.string.search)) },
                     leadingIcon = { 
                         Icon(
                             Icons.Default.Search, 
@@ -324,7 +324,7 @@ fun ChatListScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Info,
-                                    contentDescription = "Why can't I connect?",
+                                    contentDescription = stringResource(R.string.why_can_t_i_connect),
                                     tint = ConnectionWarningColor,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -495,9 +495,9 @@ fun ChatListScreen(
                                     contentAlignment = if (animatedOffsetX < 0) Alignment.CenterEnd else Alignment.CenterStart
                                 ) {
                                     if (animatedOffsetX < -50f) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = Color.White)
                                     } else if (animatedOffsetX > 50f) {
-                                        Icon(if (chat.isLocked) Icons.Default.Clear else Icons.Default.Lock, contentDescription = "Lock", tint = Color.White)
+                                        Icon(if (chat.isLocked) Icons.Default.Clear else Icons.Default.Lock, contentDescription = stringResource(R.string.lock), tint = Color.White)
                                     }
                                 }
 
@@ -569,7 +569,7 @@ fun ChatListScreen(
                             // readout and the only way to stop it.
                             if (updateDownloadProgress == null) {
                                 IconButton(onClick = { com.neveroff.util.UpdateController.dismissBanner() }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.dismiss), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                                 }
                             }
                         }
@@ -594,7 +594,7 @@ fun ChatListScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Stop download",
+                                        contentDescription = stringResource(R.string.stop_download),
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.size(14.dp)
                                     )
@@ -606,20 +606,20 @@ fun ChatListScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (!serverVer.description.isBlank()) {
                                 TextButton(onClick = { showWhatsNewDialog = true }) {
-                                    Text("What's new")
+                                    Text(stringResource(R.string.what_s_new))
                                 }
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             if (downloadedApkFile != null) {
                                 Button(onClick = { UpdateManager.installApk(context, downloadedApkFile!!) }) {
-                                    Text("Install")
+                                    Text(stringResource(R.string.install))
                                 }
                             } else {
                                 Button(
                                     enabled = updateDownloadProgress == null,
                                     onClick = { com.neveroff.util.UpdateController.startDownload(context) }
                                 ) {
-                                    Text("Download")
+                                    Text(stringResource(R.string.download))
                                 }
                             }
                         }
@@ -642,7 +642,7 @@ fun ChatListScreen(
         AlertDialog(
             onDismissRequest = { showConnectionHelp = false },
             icon = { Icon(Icons.Default.Info, contentDescription = null, tint = ConnectionWarningColor) },
-            title = { Text("Can't connect", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.can_t_connect), fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier
@@ -676,7 +676,7 @@ fun ChatListScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showConnectionHelp = false }) { Text("Got it") }
+                TextButton(onClick = { showConnectionHelp = false }) { Text(stringResource(R.string.got_it)) }
             }
         )
     }
@@ -687,8 +687,8 @@ fun ChatListScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = null },
             icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Chat?") },
-            text = { Text("Are you sure you want to delete this chat?") },
+            title = { Text(stringResource(R.string.delete_chat)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want_to)) },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
@@ -704,12 +704,12 @@ fun ChatListScreen(
                     }
                     showDeleteConfirmDialog = null
                 }) {
-                    Text("Yes", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.yes), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -836,7 +836,7 @@ fun ChannelListItem(
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         Icons.Default.Campaign,
-                        contentDescription = "Channel",
+                        contentDescription = stringResource(R.string.channel),
                         modifier = Modifier.size(15.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -844,7 +844,7 @@ fun ChannelListItem(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             Icons.Default.NotificationsOff,
-                            contentDescription = "Muted",
+                            contentDescription = stringResource(R.string.muted),
                             modifier = Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -932,7 +932,7 @@ fun ChatListItem(chat: ChatItemUiModel, isOnline: Boolean, onClick: () -> Unit, 
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = "Favorites",
+                            contentDescription = stringResource(R.string.favorites),
                             tint = Color(0xFFFFD700),
                             modifier = Modifier.size(30.dp)
                         )
@@ -961,7 +961,7 @@ fun ChatListItem(chat: ChatItemUiModel, isOnline: Boolean, onClick: () -> Unit, 
                         if (remoteProfile?.avatar_url != null) {
                             coil.compose.AsyncImage(
                                 model = remoteProfile?.avatar_url,
-                                contentDescription = "Avatar",
+                                contentDescription = stringResource(R.string.avatar),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -1003,7 +1003,7 @@ fun ChatListItem(chat: ChatItemUiModel, isOnline: Boolean, onClick: () -> Unit, 
                     )
                     if (chat.isLocked) {
                         Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.Default.Lock, contentDescription = "Locked", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.locked), modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))

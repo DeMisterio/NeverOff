@@ -1,5 +1,9 @@
 package com.neveroff.ui.components
 
+import com.neveroff.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -58,7 +62,7 @@ fun UpdateProgressStrip(modifier: Modifier = Modifier) {
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Stop update download",
+                        contentDescription = stringResource(R.string.stop_update_download),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(13.dp)
                     )

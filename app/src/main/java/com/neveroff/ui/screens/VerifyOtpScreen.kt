@@ -1,5 +1,7 @@
 package com.neveroff.ui.screens
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -76,14 +78,14 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.neveroff_logo),
-                contentDescription = "NeverOff Logo",
+                contentDescription = stringResource(R.string.neveroff_logo),
                 modifier = Modifier.size(60.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Check your email", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.check_your_email), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -235,12 +237,12 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
                     "success" -> {
                         Icon(
                             imageVector = Icons.Filled.Check,
-                            contentDescription = "Success",
+                            contentDescription = stringResource(R.string.success),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                     else -> {
-                        Text("Verify Code", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.verify_code), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }

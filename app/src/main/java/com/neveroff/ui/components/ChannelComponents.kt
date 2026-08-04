@@ -1,5 +1,7 @@
 package com.neveroff.ui.components
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -211,7 +213,7 @@ fun SubscribeButton(
                 if (justSubscribed) {
                     Icon(
                         Icons.Default.Check,
-                        contentDescription = "Subscribed",
+                        contentDescription = stringResource(R.string.subscribed),
                         tint = Color.White,
                         modifier = Modifier.size(if (compact) 16.dp else 20.dp).scale(tickScale)
                     )

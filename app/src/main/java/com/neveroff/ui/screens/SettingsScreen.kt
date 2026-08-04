@@ -97,7 +97,7 @@ fun SettingsScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -144,19 +144,19 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
             icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Log out?") },
-            text = { Text("You'll need to sign in again to access your chats on this device.") },
+            title = { Text(stringResource(R.string.log_out)) },
+            text = { Text(stringResource(R.string.you_ll_need_to_sign_in)) },
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutConfirm = false
                     onLogout()
                 }) {
-                    Text("Log out", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.log_out_2), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -227,7 +227,7 @@ private fun MainSettingsCategory(
                         if (profile?.avatar_url != null) {
                             AsyncImage(
                                 model = profile.avatar_url,
-                                contentDescription = "Avatar",
+                                contentDescription = stringResource(R.string.avatar),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -263,7 +263,7 @@ private fun MainSettingsCategory(
                     }
 
                     IconButton(onClick = onEditProfile) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_profile))
                     }
                 }
             }
@@ -425,7 +425,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
         // App Theme Selector
         item {
             SettingsCard {
-                Text("App Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -446,7 +446,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
         // Live chat preview — reflects every appearance setting below as you change it, and is
         // fully interactive (scroll it, swipe a bubble) just like the Animations screen's preview.
         item {
-            Text("Live Preview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.live_preview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 text = "Updates live as you change the settings below",
                 style = MaterialTheme.typography.bodySmall,
@@ -484,7 +484,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
             SettingsCard(
                 modifier = Modifier.alpha(if (wallpaperBlocked) 0.38f else 1f)
             ) {
-                Text("Chat Wallpaper / Theme", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.chat_wallpaper_theme), style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = "For all chats",
                     style = MaterialTheme.typography.bodySmall,
@@ -555,7 +555,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Apply to already changed chats", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.apply_to_already_changed_chats), style = MaterialTheme.typography.bodyLarge)
                     Checkbox(
                         checked = applyToAlreadyChanged,
                         onCheckedChange = { SettingsManager.setApplyThemeToAlreadyChanged(it) }
@@ -580,7 +580,7 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Animations", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.animations), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                 }
             }
@@ -607,7 +607,7 @@ private fun AnimationsCategoryScreen() {
         // in slow motion. Swipe right for dedicated single-purpose previews (scroll only,
         // send/receive only, reply gesture only) — every window is interactive.
         item {
-            Text("Live Preview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.live_preview), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 text = "Same bubbles and physics as a real chat, slowed down so you can see them. Swipe for more, or just try dragging a bubble yourself.",
                 style = MaterialTheme.typography.bodySmall,
@@ -625,7 +625,7 @@ private fun AnimationsCategoryScreen() {
 
         item {
             SettingsCard {
-                Text("Animation Smoothness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.animation_smoothness), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 val currentPreset = remember(allAnimations, bounciness) { AnimationSmoothness.resolve(allAnimations, bounciness) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -665,7 +665,7 @@ private fun AnimationsCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Bubble Stretchiness", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.bubble_stretchiness), style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = stretchiness,
                         onCheckedChange = { SettingsManager.setStretchiness(it) },
@@ -682,7 +682,7 @@ private fun AnimationsCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Optimise Optimisation", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.optimise_optimisation), style = MaterialTheme.typography.bodyLarge)
                     Checkbox(
                         checked = optimiseOptimisation,
                         onCheckedChange = { SettingsManager.setOptimiseOptimisation(it) }
@@ -728,7 +728,7 @@ private fun PrivacyCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Send Read Receipts (Seen)", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.send_read_receipts_seen), style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = seenSelf,
                         onCheckedChange = { SettingsManager.setSeenIndicatorSelf(it) }
@@ -744,7 +744,7 @@ private fun PrivacyCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Show Partner Read Receipts", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.show_partner_read_receipts), style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = seenOthers,
                         onCheckedChange = { SettingsManager.setSeenIndicatorOthers(it) }
@@ -755,7 +755,7 @@ private fun PrivacyCategoryScreen() {
 
         item {
             SettingsCard {
-                Text("Who can see my Avatar", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.who_can_see_my_avatar), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     options.forEach { opt ->
@@ -771,7 +771,7 @@ private fun PrivacyCategoryScreen() {
 
         item {
             SettingsCard {
-                Text("Who can see my Bio", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.who_can_see_my_bio), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     options.forEach { opt ->
@@ -787,7 +787,7 @@ private fun PrivacyCategoryScreen() {
 
         item {
             SettingsCard {
-                Text("Who can see my Online status", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.who_can_see_my_online_status), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     options.forEach { opt ->
@@ -817,7 +817,7 @@ private fun LanguageCategoryScreen() {
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
-            placeholder = { Text("Search language...") },
+            placeholder = { Text(stringResource(R.string.search_language)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -839,7 +839,7 @@ private fun LanguageCategoryScreen() {
                 ) {
                     Text(text = name, style = MaterialTheme.typography.titleMedium)
                     if (language == code) {
-                        Icon(Icons.Default.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -865,7 +865,7 @@ private fun DeveloperCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Enable Debug Panel", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.enable_debug_panel), style = MaterialTheme.typography.titleMedium)
                     Switch(
                         checked = debugEnabled,
                         onCheckedChange = { SettingsManager.setDebugPanelEnabled(it) }
@@ -881,7 +881,7 @@ private fun DeveloperCategoryScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Auto Save Diagnostic Logs", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.auto_save_diagnostic_logs), style = MaterialTheme.typography.titleMedium)
                     Switch(
                         checked = autoSaveLogs,
                         onCheckedChange = { SettingsManager.setAutoSaveLogs(it) }
@@ -976,9 +976,9 @@ private fun UpdatesSettingsSection() {
                 if (checking) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
-                    Text("Checking…")
+                    Text(stringResource(R.string.checking))
                 } else {
-                    Text("Check for updates")
+                    Text(stringResource(R.string.check_for_updates))
                 }
             }
 
@@ -994,7 +994,7 @@ private fun UpdatesSettingsSection() {
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Autodownload updates", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.autodownload_updates), style = MaterialTheme.typography.bodyLarge)
                     Text(
                         text = "Download new versions automatically while you use the app",
                         style = MaterialTheme.typography.bodySmall,
@@ -1040,24 +1040,24 @@ private fun UpdatesSettingsSection() {
                         )
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = { com.neveroff.util.UpdateController.cancelDownload() }) {
-                            Text("Stop")
+                            Text(stringResource(R.string.stop))
                         }
                     }
                 } else {
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (!version.description.isBlank()) {
-                            TextButton(onClick = { showWhatsNew = true }) { Text("What's new") }
+                            TextButton(onClick = { showWhatsNew = true }) { Text(stringResource(R.string.what_s_new)) }
                         }
                         Spacer(Modifier.weight(1f))
                         if (downloaded != null) {
                             Button(onClick = {
                                 com.neveroff.util.UpdateManager.installApk(context, downloaded!!)
-                            }) { Text("Install") }
+                            }) { Text(stringResource(R.string.install)) }
                         } else {
                             Button(onClick = {
                                 com.neveroff.util.UpdateController.startDownload(context)
-                            }) { Text("Download") }
+                            }) { Text(stringResource(R.string.download)) }
                         }
                     }
                 }
