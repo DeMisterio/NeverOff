@@ -413,10 +413,17 @@ class ChatRepository(
                 val remoteName = "${java.util.UUID.randomUUID()}_${file.name}.enc"
                 
                 // Cache the file locally so MediaMessagePlayer can find it instantly
-                val ext = when (prefix) {
-                    "VOICE" -> "m4a"
-                    "VIDEO", "FILE_VIDEO" -> "mp4"
-                    "IMAGE" -> "jpg"
+                val ext = when {
+                    prefix == "VOICE" -> "m4a"
+                    prefix == "VIDEO" || prefix == "FILE_VIDEO" -> "mp4"
+                    prefix == "IMAGE" -> "jpg"
+                    // "FILE:report.pdf" — keep the real extension so the cached
+                    // copy can be opened by whatever handles that type. Writing
+                    // everything as ".file" left the receiver with a blob no
+                    // app would claim.
+                    prefix.startsWith("FILE:") ->
+                        com.neveroff.util.FileKind.extensionOf(prefix.removePrefix("FILE:"))
+                            .ifEmpty { "file" }
                     else -> "file"
                 }
                 val cachedFile = java.io.File(file.parent, "dec_${remoteName}.$ext")

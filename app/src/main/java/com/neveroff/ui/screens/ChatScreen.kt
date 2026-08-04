@@ -38,6 +38,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.neveroff.R
@@ -259,7 +264,20 @@ fun ChatScreen(
             if (uri != null) {
                 val path = com.neveroff.util.ImageHelper.copyImageToInternalStorage(context, uri, "chat_files")
                 if (path != null) {
-                    viewModel.sendMediaMessage("IMAGE", File(path)) {}
+                    // Every picked file used to be sent as IMAGE regardless of
+                    // what it was, so a PDF or a zip arrived claiming to be a
+                    // photo and rendered as a broken frame. The real name goes
+                    // in the envelope so the other end can say what it is.
+                    val name = com.neveroff.util.FileKind.displayName(context, uri)
+                    val kind = com.neveroff.util.FileKind.of(name)
+                    val prefix = when (kind) {
+                        // Pictures and video still go down their own paths so
+                        // they preview inline rather than as a file row.
+                        com.neveroff.util.FileKind.IMAGE -> "IMAGE"
+                        com.neveroff.util.FileKind.VIDEO -> "FILE_VIDEO"
+                        else -> "FILE:$name"
+                    }
+                    viewModel.sendMediaMessage(prefix, File(path)) {}
                 }
             }
         }
@@ -574,32 +592,23 @@ fun ChatScreen(
                                         )
                                     )
                                 } else {
-                                    showAttachMenu = true
+                                    showAttachMenu = !showAttachMenu
                                 }
                             },
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .alpha(if (imageBlocked && videoBlocked) 0.38f else 1f)
-                        ) { Icon(Icons.Default.Add, "Attach") }
-                        DropdownMenu(
-                            expanded = showAttachMenu,
-                            onDismissRequest = { showAttachMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.gallery)) },
-                                leadingIcon = { Icon(Icons.Default.AccountBox, contentDescription = null) },
-                                onClick = {
-                                    showAttachMenu = false
-                                    showMediaGalleryPicker = true
-                                }
+                            // Rotates to an x while the panel is open, so the
+                            // button says what pressing it again will do.
+                            val plusRotation by animateFloatAsState(
+                                targetValue = if (showAttachMenu) 45f else 0f,
+                                label = "attachPlus"
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.files)) },
-                                leadingIcon = { Icon(Icons.Default.Create, contentDescription = null) },
-                                onClick = {
-                                    showAttachMenu = false
-                                    filePickerLauncher.launch(arrayOf("*/*"))
-                                }
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.attach),
+                                modifier = Modifier.rotate(plusRotation)
                             )
                         }
                     }
@@ -771,6 +780,44 @@ fun ChatScreen(
                                     )
                                 }
                             )
+                        }
+                    }
+                }
+
+                // Attachment options, UNDER the typing field rather than as a
+                // dropdown floating over the conversation. Below the composer
+                // is where the thumb already is, and a panel that pushes the
+                // chat up cannot cover the message somebody is replying to —
+                // which a dropdown anchored to the + button always did.
+                AnimatedVisibility(
+                    visible = showAttachMenu,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        AttachOption(
+                            icon = Icons.Default.AccountBox,
+                            label = stringResource(R.string.gallery),
+                            enabled = !imageBlocked,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            showAttachMenu = false
+                            showMediaGalleryPicker = true
+                        }
+                        AttachOption(
+                            icon = Icons.Default.Create,
+                            label = stringResource(R.string.files),
+                            enabled = true,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            showAttachMenu = false
+                            filePickerLauncher.launch(arrayOf("*/*"))
                         }
                     }
                 }
@@ -1693,3 +1740,45 @@ fun MessageBubble(
 
 val Float.sign: Float get() = if (this < 0) -1f else 1f
 val Float.absoluteValue: Float get() = if (this < 0) -this else this
+
+/**
+ * One tile in the attachment panel below the composer.
+ *
+ * A labelled tile rather than a bare icon: "Gallery" and "Files" are not
+ * obvious from a picture frame and a pencil, and the panel is only opened by
+ * people who are unsure what their options are.
+ */
+@Composable
+private fun AttachOption(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    Surface(
+        modifier = modifier
+            .alpha(if (enabled) 1f else 0.38f)
+            .clickable {
+                if (enabled) onClick() else com.neveroff.ui.components.AppToast.show(
+                    context.getString(
+                        R.string.restriction_blocked_toast,
+                        context.getString(R.string.feature_send_image)
+                    )
+                )
+            },
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}

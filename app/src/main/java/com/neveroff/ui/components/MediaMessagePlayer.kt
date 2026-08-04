@@ -91,6 +91,14 @@ fun MediaMessagePlayer(
                         isVoice -> "m4a"
                         isVideo || isFileVideo -> "mp4"
                         messageText.startsWith("[IMAGE]") -> "jpg"
+                        // Mirror the sender: keep the real extension so the
+                        // decrypted copy can be opened by whatever handles that
+                        // type. Writing everything as ".file" left the receiver
+                        // with a blob no app would claim.
+                        messageText.startsWith("[FILE:") ->
+                            com.neveroff.util.FileKind
+                                .extensionOf(messageText.substringAfter("[FILE:").substringBefore("]"))
+                                .ifEmpty { "file" }
                         else -> "file"
                     }
                     val decryptedFile = File(context.cacheDir, "dec_${remoteName}.$ext")
@@ -313,25 +321,64 @@ fun MediaMessagePlayer(
         )
     } else if (messageText.startsWith("[FILE:")) {
         val fileName = messageText.substringAfter("[FILE:").substringBefore("]")
+        val kind = com.neveroff.util.FileKind.of(fileName)
+        val ext = com.neveroff.util.FileKind.extensionOf(fileName)
+        val sizeLabel = localFileUri?.let { uri ->
+            runCatching {
+                java.io.File(uri.path ?: "").takeIf { it.exists() }
+                    ?.let { com.neveroff.util.FileKind.humanSize(it.length()) }
+            }.getOrNull()
+        }
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier.padding(4.dp)
+            modifier = modifier
+                .padding(4.dp)
+                .clickable(enabled = localFileUri != null) {
+                    localFileUri?.let { u -> onClickFullScreen?.invoke(u) }
+                }
         ) {
+            // The extension in a coloured tile, rather than a generic save
+            // icon on everything. "PDF" tells you what arrived; a floppy disk
+            // outline does not, and every file looked identical before.
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(textColor.copy(alpha = 0.2f)),
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(kind.tint.copy(alpha = 0.22f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_save),
-                    contentDescription = stringResource(R.string.file),
-                    tint = textColor
+                if (ext.isNotEmpty()) {
+                    Text(
+                        text = ext.take(4).uppercase(),
+                        color = kind.tint,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 1
+                    )
+                } else {
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_save),
+                        contentDescription = stringResource(R.string.file),
+                        tint = kind.tint
+                    )
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(
+                    fileName,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Text(
+                    text = listOfNotNull(kind.label, sizeLabel).joinToString(" · "),
+                    color = textColor.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(fileName, color = textColor, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
