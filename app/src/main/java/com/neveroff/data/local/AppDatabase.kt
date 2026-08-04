@@ -71,7 +71,23 @@ interface MessageDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMessages(messages: List<MessageEntity>)
-    
+
+    /**
+     * Corrects the timestamp on a row that already exists.
+     *
+     * insertMessages IGNOREs conflicts, which is right — a blanket REPLACE
+     * would overwrite `content`, and if a decrypt failed on this pass that
+     * would swap good plaintext for "[Encrypted message]" permanently.
+     *
+     * But IGNORE also means a row cached with a wrong timestamp is never
+     * corrected by any amount of re-syncing. Every message fetched before the
+     * timestamp parser was fixed was stamped with the moment it was
+     * downloaded, so this repairs them in place, touching only the column that
+     * was wrong.
+     */
+    @Query("UPDATE local_messages SET createdAt = :createdAt WHERE id = :id AND createdAt <> :createdAt")
+    suspend fun repairTimestamp(id: String, createdAt: Long)
+
     @Query("UPDATE local_messages SET status = :status WHERE id = :id")
     suspend fun updateMessageStatus(id: String, status: Int)
 

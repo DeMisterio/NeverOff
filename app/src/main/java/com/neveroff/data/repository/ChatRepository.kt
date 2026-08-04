@@ -125,6 +125,10 @@ class ChatRepository(
             // Batch insert into local DB
             if (entities.isNotEmpty()) {
                 db.messageDao().insertMessages(entities)
+                // Rows already present are IGNOREd above, so anything cached
+                // with the old broken timestamp would stay broken forever.
+                // Only writes when the value actually differs.
+                entities.forEach { db.messageDao().repairTimestamp(it.id, it.createdAt) }
             }
 
             // Update last message in chat list (use the most recent message)

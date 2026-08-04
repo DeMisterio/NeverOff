@@ -32,13 +32,49 @@ data class Message(
     val status: String = "sent"
 )
 
+/**
+ * Parses a timestamp as PostgREST actually emits it.
+ *
+ * This used to be a single Instant.parse with a fallback to "now", and it was
+ * silently failing for every row ever fetched. PostgREST renders a timestamptz
+ * with a numeric offset — "2026-08-02T22:17:33.7173+00:00" — while
+ * Instant.parse uses ISO_INSTANT, which requires the literal "Z" designator and
+ * rejects "+00:00". So every parse threw, every row fell through to
+ * System.currentTimeMillis(), and every message and channel post was stamped
+ * with the moment it happened to be downloaded.
+ *
+ * That is why a whole channel read as posted seconds ago, and why a re-synced
+ * chat came back with every message sharing one timestamp and sorting by
+ * insertion order instead of by time.
+ *
+ * "Now" was the worst possible fallback here precisely because it looks
+ * plausible: a wrong-but-believable value produces no error, no crash and no
+ * report, just quietly wrong history. The three parsers below cover every shape
+ * Postgres emits, so it is now genuinely a last resort.
+ */
 fun parseSupabaseTimestamp(timestamp: String?): Long {
     if (timestamp.isNullOrEmpty()) return System.currentTimeMillis()
-    return try {
-        java.time.Instant.parse(timestamp).toEpochMilli()
-    } catch (e: Exception) {
-        System.currentTimeMillis()
-    }
+
+    // "...Z" — ISO_INSTANT, what Instant.parse alone handles.
+    try {
+        return java.time.Instant.parse(timestamp).toEpochMilli()
+    } catch (e: Exception) { /* fall through */ }
+
+    // "...+00:00" / "...+02:00" — what PostgREST actually sends for timestamptz.
+    try {
+        return java.time.OffsetDateTime.parse(timestamp).toInstant().toEpochMilli()
+    } catch (e: Exception) { /* fall through */ }
+
+    // No offset at all — a plain `timestamp` column. Postgres stores those in
+    // UTC and PostgREST renders them naked, so reading them as anything else
+    // would shift every value by the device's offset.
+    try {
+        return java.time.LocalDateTime.parse(timestamp)
+            .toInstant(java.time.ZoneOffset.UTC)
+            .toEpochMilli()
+    } catch (e: Exception) { /* fall through */ }
+
+    return System.currentTimeMillis()
 }
 
 fun formatTime(timestamp: Long): String {
