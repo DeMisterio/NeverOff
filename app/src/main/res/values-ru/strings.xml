@@ -324,4 +324,15 @@
     <string name="auto_delete_hours">%1$d ч</string>
     <string name="auto_delete_days_n">%1$d д</string>
     <string name="attach">Прикрепить</string>
+    <string name="board_title">Общая доска</string>
+    <string name="board_close">Закрыть у обоих</string>
+    <string name="board_clear">Очистить</string>
+    <string name="board_waiting">Ждём, когда собеседник присоединится</string>
+    <string name="board_both_here">Рисуете вдвоём</string>
+    <string name="board_invite_title">Приглашает порисовать</string>
+    <string name="board_invite_body">%1$s открыл общую доску.</string>
+    <string name="board_join">Присоединиться</string>
+    <string name="board_decline">Не сейчас</string>
+    <string name="board_open">Общая доска</string>
+    <string name="board_ended">Доска закрыта</string>
 </resources>

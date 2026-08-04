@@ -240,6 +240,8 @@ fun ChatScreen(
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showProfileId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAttachMenu by rememberSaveable { mutableStateOf(false) }
+    /** Set when the user picks "Live board"; LiveBoardHost consumes and clears it. */
+    var startBoardRequested by remember { mutableStateOf(false) }
 
     // Restrictions issued from the moderation console. A mute arrives as
     // blocks_sending rather than as a feature list, and EnforcementState folds
@@ -374,6 +376,18 @@ fun ChatScreen(
     // rest of the app.
     val hasIncomingTemporaryMessage = uiMessages.any { it.isTemp && !it.isMine }
     com.neveroff.ui.components.SecureScreen(active = hasIncomingTemporaryMessage)
+
+    // The board floats over the whole chat rather than sitting inside the
+    // message list, so it stays put while the conversation scrolls underneath.
+    // It draws nothing until somebody opens or is invited to one.
+    com.neveroff.ui.components.LiveBoardHost(
+        chatId = chatId,
+        myId = myId,
+        authKey = authKey,
+        partnerName = finalRemoteUserName,
+        startRequested = startBoardRequested,
+        onStartHandled = { startBoardRequested = false }
+    )
 
     val onlineUsersFromPresence by com.neveroff.data.remote.PresenceManager.onlineUsers.collectAsState()
 
@@ -818,6 +832,15 @@ fun ChatScreen(
                         ) {
                             showAttachMenu = false
                             filePickerLauncher.launch(arrayOf("*/*"))
+                        }
+                        AttachOption(
+                            icon = Icons.Default.Edit,
+                            label = stringResource(R.string.board_open),
+                            enabled = !sendBlocked,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            showAttachMenu = false
+                            startBoardRequested = true
                         }
                     }
                 }

@@ -328,4 +328,15 @@
     <string name="auto_delete_hours">%1$d h</string>
     <string name="auto_delete_days_n">%1$d d</string>
     <string name="attach">Attach</string>
+    <string name="board_title">Live board</string>
+    <string name="board_close">Close for both</string>
+    <string name="board_clear">Clear</string>
+    <string name="board_waiting">Waiting for them to join</string>
+    <string name="board_both_here">Both drawing</string>
+    <string name="board_invite_title">Wants to draw with you</string>
+    <string name="board_invite_body">%1$s opened a live board.</string>
+    <string name="board_join">Join</string>
+    <string name="board_decline">Not now</string>
+    <string name="board_open">Live board</string>
+    <string name="board_ended">The board was closed</string>
 </resources>
