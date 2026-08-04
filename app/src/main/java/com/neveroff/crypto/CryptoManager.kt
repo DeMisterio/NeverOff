@@ -326,6 +326,52 @@ object CryptoManager {
     }
     
     /**
+     * Replace this device's identity key with one recovered from a backup.
+     *
+     * The counterpart to [KeyBackup.restore]. Re-wraps the recovered private
+     * key under this device's Keystore master key — the backup's wrapping is
+     * for transport and storage, not for use, and leaving it in that form would
+     * mean holding the passphrase in memory for the life of the session.
+     *
+     * Clears the derived shared-secret cache: those were computed against the
+     * key being replaced, and a stale entry would silently fail to decrypt
+     * exactly the messages this restore exists to recover.
+     */
+    @Synchronized
+    fun installRestoredKeyPair(publicKeyEncoded: ByteArray, privateKeyPkcs8: ByteArray) {
+        ensurePrefsInitialized()
+
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, getOrGenerateMasterKey())
+        val iv = cipher.iv
+        val encryptedPriv = cipher.doFinal(privateKeyPkcs8)
+
+        prefs.edit()
+            .putString("ec_pub", Base64.encodeToString(publicKeyEncoded, Base64.NO_WRAP))
+            .putString("ec_priv_enc", Base64.encodeToString(encryptedPriv, Base64.NO_WRAP))
+            .putString("ec_iv", Base64.encodeToString(iv, Base64.NO_WRAP))
+            .apply()
+
+        val keyFactory = KeyFactory.getInstance("EC")
+        cachedKeyPair = KeyPair(
+            keyFactory.generatePublic(X509EncodedKeySpec(publicKeyEncoded)),
+            keyFactory.generatePrivate(PKCS8EncodedKeySpec(privateKeyPkcs8))
+        )
+        synchronized(authKeyCache) { authKeyCache.clear() }
+    }
+
+    /**
+     * Whether this device already holds an identity key.
+     *
+     * Drives the restore prompt: a fresh install has none, and offering to
+     * restore over a key that is already working would invite someone to
+     * overwrite a good key with an older backup.
+     */
+    @Synchronized
+    fun hasStoredKeyPair(): Boolean =
+        ensurePrefsInitialized() && prefs.getString("ec_priv_enc", null) != null
+
+    /**
      * Records which account the stored identity key belongs to.
      *
      * Without this there is no way to tell "signed back into the same account"

@@ -57,4 +57,30 @@
     <string name="forward_sent">Переслано</string>
     <string name="forward_failed">Не удалось переслать пост</string>
     <string name="forward_search_hint">Поиск чатов…</string>
+
+    <!-- Резервная копия ключа, защищённая паролем. -->
+    <string name="backup_title">Резервная копия переписки</string>
+    <string name="backup_subtitle_off">Ваши сообщения можно прочитать только на этом устройстве</string>
+    <string name="backup_subtitle_on">Копия создана %1$s</string>
+    <string name="backup_explain">Ваши сообщения зашифрованы ключом, который существует только на этом телефоне. Если удалить приложение или потерять устройство, восстановить их будет невозможно — ни вам, ни нам.\n\nЗадайте пароль восстановления, и ключ будет сохранён, запечатанный этим паролем, чтобы вы могли восстановить переписку на новом устройстве.</string>
+    <string name="backup_warning">Мы не видим ваш пароль и не можем его сбросить. Если вы его забудете, переписка будет утрачена навсегда.</string>
+    <string name="backup_set">Задать пароль восстановления</string>
+    <string name="backup_change">Изменить пароль</string>
+    <string name="backup_remove">Удалить копию</string>
+    <string name="backup_passphrase">Пароль восстановления</string>
+    <string name="backup_passphrase_repeat">Повторите пароль</string>
+    <string name="backup_mismatch">Пароли не совпадают.</string>
+    <string name="backup_too_short">Используйте не менее %1$d символов.</string>
+    <string name="backup_saved">Копия создана</string>
+    <string name="backup_removed">Копия удалена</string>
+    <string name="backup_failed">Не удалось сохранить копию. Проверьте соединение и попробуйте снова.</string>
+
+    <string name="restore_title">Восстановить сообщения</string>
+    <string name="restore_explain">На этом устройстве нет ключа от вашего аккаунта. Введите пароль восстановления, чтобы вернуть историю переписки.</string>
+    <string name="restore_action">Восстановить</string>
+    <string name="restore_skip">Продолжить без восстановления</string>
+    <string name="restore_skip_warning">Существующие сообщения останутся нечитаемыми на этом устройстве. Новые будут работать как обычно.</string>
+    <string name="restore_wrong">Этот пароль не открывает резервную копию.</string>
+    <string name="restore_done">Сообщения восстановлены</string>
+    <string name="restore_working">Расшифровка…</string>
 </resources>

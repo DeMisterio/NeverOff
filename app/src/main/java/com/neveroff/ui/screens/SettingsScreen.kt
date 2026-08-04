@@ -306,6 +306,8 @@ private fun MainSettingsCategory(
             )
         }
 
+        item { ChatBackupSettingsSection() }
+
         item { UpdatesSettingsSection() }
 
         item {

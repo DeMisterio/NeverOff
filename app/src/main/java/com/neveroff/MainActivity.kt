@@ -244,6 +244,12 @@ fun AppNavigation(intent: android.content.Intent?) {
         mutableStateOf<com.neveroff.data.remote.EnforcementRepository.Status?>(null)
     }
     var enforcementCheckToken by remember { mutableStateOf(0) }
+
+    // Set when this device holds a key the account has moved on from, and a
+    // recoverable backup exists. Drives the restore prompt. Not persisted: a
+    // user who skips should be asked again next launch rather than silently
+    // left with an unreadable history forever.
+    var pendingKeyRestoreUserId by remember { mutableStateOf<String?>(null) }
     // Action id of a notice the user chose to continue past because it could not
     // be acknowledged on the server. Deliberately not persisted: an unconfirmed
     // notice should come back on the next launch.
@@ -434,14 +440,39 @@ fun AppNavigation(intent: android.content.Intent?) {
                             } catch (e: Exception) { null }
 
                             if (localPublicKey != null && localPublicKey != remoteProfile.public_key) {
-                                try {
-                                    SupabaseClient.client.postgrest["profiles"]
-                                        .update({ set("public_key", localPublicKey) }) {
-                                            filter { eq("id", userId) }
-                                        }
-                                    remoteProfile = remoteProfile.copy(public_key = localPublicKey)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                                // Publishing this device's key here is only
+                                // correct when the account has no other device
+                                // relying on the old one. Doing it
+                                // unconditionally is how a second sign-in used
+                                // to break the first device: the other side
+                                // starts encrypting to the new key, and the
+                                // original phone can no longer read anything
+                                // that arrives — silently, with no error
+                                // anywhere.
+                                //
+                                // A backup existing means the real key is
+                                // recoverable, so restoring it is strictly
+                                // better than replacing it. Offer that instead.
+                                val backupExists = runCatching {
+                                    com.neveroff.data.remote.KeyBackupRepository.exists(userId)
+                                }.getOrDefault(false)
+
+                                val remoteKeyIsReal = !remoteProfile.public_key.isNullOrBlank()
+
+                                if (backupExists && remoteKeyIsReal) {
+                                    withContext(Dispatchers.Main) {
+                                        pendingKeyRestoreUserId = userId
+                                    }
+                                } else {
+                                    try {
+                                        SupabaseClient.client.postgrest["profiles"]
+                                            .update({ set("public_key", localPublicKey) }) {
+                                                filter { eq("id", userId) }
+                                            }
+                                        remoteProfile = remoteProfile.copy(public_key = localPublicKey)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
                                 }
                             }
                             
@@ -568,6 +599,29 @@ fun AppNavigation(intent: android.content.Intent?) {
             // Lifted, expired, or overturned — put them back in the app.
             navController.navigate("chat_list") { popUpTo(0) }
         }
+    }
+
+    // Rendered ahead of the NavHost, like the onboarding gates above, rather
+    // than as a route. Restoring the key has to happen before any chat screen
+    // reads a message, or the first sync caches "[Encrypted message]" against
+    // rows the restore was about to make readable.
+    val restoreUserId = pendingKeyRestoreUserId
+    if (restoreUserId != null) {
+        com.neveroff.ui.screens.RestoreFromBackupScreen(
+            userId = restoreUserId,
+            onRestored = {
+                pendingKeyRestoreUserId = null
+                // The local cache holds whatever failed to decrypt before the
+                // real key arrived. Dropping it forces a clean resync, which is
+                // the point of having restored the key at all.
+                scope.launch {
+                    runCatching { AppDatabase.resetInstance(context) }
+                    enforcementCheckToken++
+                }
+            },
+            onSkip = { pendingKeyRestoreUserId = null }
+        )
+        return
     }
 
     NavHost(

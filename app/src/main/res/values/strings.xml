@@ -59,4 +59,32 @@
     <string name="forward_sent">Forwarded</string>
     <string name="forward_failed">Couldn\'t forward that post</string>
     <string name="forward_search_hint">Search chats…</string>
+
+    <!-- Passphrase-protected backup of the identity key. Wording here is
+         deliberately blunt about the irreversibility: this is the one screen
+         where an unclear warning costs somebody their entire history. -->
+    <string name="backup_title">Chat backup</string>
+    <string name="backup_subtitle_off">Your messages can only be read on this device</string>
+    <string name="backup_subtitle_on">Backed up %1$s</string>
+    <string name="backup_explain">Your messages are encrypted with a key that exists only on this phone. If you uninstall the app or lose the device, they cannot be recovered — not by you, not by us.\n\nSet a recovery passphrase and that key is stored, sealed with it, so you can restore your history on a new device.</string>
+    <string name="backup_warning">We never see your passphrase and cannot reset it. If you forget it, your history is gone permanently.</string>
+    <string name="backup_set">Set a recovery passphrase</string>
+    <string name="backup_change">Change passphrase</string>
+    <string name="backup_remove">Remove backup</string>
+    <string name="backup_passphrase">Recovery passphrase</string>
+    <string name="backup_passphrase_repeat">Repeat passphrase</string>
+    <string name="backup_mismatch">The two passphrases do not match.</string>
+    <string name="backup_too_short">Use at least %1$d characters.</string>
+    <string name="backup_saved">Backup created</string>
+    <string name="backup_removed">Backup removed</string>
+    <string name="backup_failed">Couldn\'t save the backup. Check your connection and try again.</string>
+
+    <string name="restore_title">Restore your messages</string>
+    <string name="restore_explain">This device has no key for your account. Enter your recovery passphrase to restore your message history.</string>
+    <string name="restore_action">Restore</string>
+    <string name="restore_skip">Continue without restoring</string>
+    <string name="restore_skip_warning">Your existing messages will stay unreadable on this device. New messages will work normally.</string>
+    <string name="restore_wrong">That passphrase does not open this backup.</string>
+    <string name="restore_done">Messages restored</string>
+    <string name="restore_working">Unlocking…</string>
 </resources>
