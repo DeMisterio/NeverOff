@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.neveroff.R
+import com.neveroff.data.model.MediaKind
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -271,15 +272,17 @@ fun ChatScreen(
                     // photo and rendered as a broken frame. The real name goes
                     // in the envelope so the other end can say what it is.
                     val name = com.neveroff.util.FileKind.displayName(context, uri)
-                    val kind = com.neveroff.util.FileKind.of(name)
-                    val prefix = when (kind) {
+                    val mediaKind = when (com.neveroff.util.FileKind.of(name)) {
                         // Pictures and video still go down their own paths so
                         // they preview inline rather than as a file row.
-                        com.neveroff.util.FileKind.IMAGE -> "IMAGE"
-                        com.neveroff.util.FileKind.VIDEO -> "FILE_VIDEO"
-                        else -> "FILE:$name"
+                        com.neveroff.util.FileKind.IMAGE -> MediaKind.IMAGE
+                        com.neveroff.util.FileKind.VIDEO -> MediaKind.VIDEO
+                        else -> MediaKind.FILE
                     }
-                    viewModel.sendMediaMessage(prefix, File(path)) {}
+                    // The name rides along for every kind now, not just FILE.
+                    // A video picked here used to lose it entirely, which left
+                    // the receiving side nothing to restore on save.
+                    viewModel.sendMediaMessage(mediaKind, File(path), originalName = name)
                 }
             }
         }
@@ -344,7 +347,12 @@ fun ChatScreen(
             rawText = rawText.substringAfter("]")
         }
 
-        val media = rawText.startsWith("[IMAGE]") || rawText.startsWith("[VOICE]") || rawText.startsWith("[VIDEO]") || rawText.startsWith("IMG_") || rawText.startsWith("VOICE_")
+        // One parser decides this now. The old chain of prefixes left out
+        // [FILE_VIDEO] and [FILE:...], so those messages skipped the media
+        // renderer entirely and were drawn as their own raw envelope — which
+        // is where the ".enc" a receiver saw was coming from.
+        val media = com.neveroff.data.model.MediaEnvelope.isMediaBody(rawText) ||
+            rawText.startsWith("IMG_") || rawText.startsWith("VOICE_")
 
         // Only a message that is *nothing but* a channel link becomes a card —
         // a link mentioned mid-sentence stays part of the sentence.
@@ -700,7 +708,8 @@ fun ChatScreen(
                                     isRecordingVideo = true
                                     cameraHelper.startRecording { file ->
                                         if (file != null) {
-                                            viewModel.sendMediaMessage("VIDEO", file) {}
+                                            // A round note, because the circle recorder produced it.
+                                            viewModel.sendMediaMessage(MediaKind.VIDEO_NOTE, file)
                                         } else {
                                             com.neveroff.ui.components.AppToast.error("Recording too short")
                                         }
@@ -713,7 +722,7 @@ fun ChatScreen(
                                     isRecordingAudio = false
                                     val file = audioHelper.stopRecording()
                                     if (file != null) {
-                                        viewModel.sendMediaMessage("VOICE", file) {}
+                                        viewModel.sendMediaMessage(MediaKind.VOICE, file)
                                     } else {
                                         com.neveroff.ui.components.AppToast.error("Hold to record a voice message")
                                     }
@@ -1111,15 +1120,31 @@ fun ChatScreen(
                                     val bytes = com.neveroff.util.ImageHelper.compressBitmap(item.editedBitmap)
                                     val file = File(context.cacheDir, "${java.util.UUID.randomUUID()}.jpg")
                                     file.writeBytes(bytes)
-                                    viewModel.sendMediaMessage("IMAGE", file) {}
+                                    viewModel.sendMediaMessage(MediaKind.IMAGE, file)
                                 }
                                 item.source.isVideo -> {
                                     val path = com.neveroff.util.ImageHelper.copyImageToInternalStorage(context, item.source.uri, "chat_media")
-                                    if (path != null) viewModel.sendMediaMessage("VIDEO", File(path)) {}
+                                    // VIDEO, not VIDEO_NOTE. Picking a clip from
+                                    // the gallery used to turn it into a round
+                                    // note, which is a thing you record, not a
+                                    // thing you choose.
+                                    if (path != null) {
+                                        viewModel.sendMediaMessage(
+                                            MediaKind.VIDEO,
+                                            File(path),
+                                            originalName = com.neveroff.util.FileKind.displayName(context, item.source.uri)
+                                        )
+                                    }
                                 }
                                 else -> {
                                     val path = com.neveroff.util.ImageHelper.copyImageToInternalStorage(context, item.source.uri, "chat_media")
-                                    if (path != null) viewModel.sendMediaMessage("IMAGE", File(path)) {}
+                                    if (path != null) {
+                                        viewModel.sendMediaMessage(
+                                            MediaKind.IMAGE,
+                                            File(path),
+                                            originalName = com.neveroff.util.FileKind.displayName(context, item.source.uri)
+                                        )
+                                    }
                                 }
                             }
                         } catch (e: Exception) {
@@ -1367,7 +1392,10 @@ fun MessageBubble(
     )
 
     /** Round video note — rendered bare (ring + pill) rather than inside a rectangular bubble. */
-    val isCircleNote = msg.text.startsWith("[VIDEO]")
+    // Only the circle recorder makes one of these; it is stated in the
+    // envelope rather than guessed at from the shape of the tag.
+    val isCircleNote = com.neveroff.data.model.MediaEnvelope.parse(msg.text)?.kind ==
+        com.neveroff.data.model.MediaKind.VIDEO_NOTE
 
     // Voice-note scrubbing: aiming slowly grows the bubble so the timeline is easier to hit,
     // and dragging past either end rubber-bands it sideways.
