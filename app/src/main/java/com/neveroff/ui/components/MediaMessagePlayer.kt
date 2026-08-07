@@ -175,22 +175,12 @@ fun MediaMessagePlayer(
         }
     }
 
-    if (uploadProgress != null) {
-        Box(modifier = modifier.padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    progress = uploadProgress,
-                    color = textColor,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(Modifier.height(4.dp))
-                Text("Отправка ${(uploadProgress * 100).toInt()}%", color = textColor, style = MaterialTheme.typography.labelSmall)
-            }
-        }
-        return
-    }
-
-    if (isDownloading) {
+    // An upload no longer replaces the media with a placeholder. The local copy
+    // is already in the cache, so the bubble draws the real thing at its real
+    // proportions and MediaUploadBadge rides on top — see ChatScreen. The
+    // bubble used to become an oval spinner and then jump to a different size
+    // and shape the moment the upload finished.
+    if (isDownloading && uploadProgress == null) {
         Box(modifier = modifier.padding(16.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.material3.CircularProgressIndicator(

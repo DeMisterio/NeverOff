@@ -84,24 +84,55 @@ class ChatViewModel(
     private val _mediaProgress = kotlinx.coroutines.flow.MutableStateFlow<Map<String, Float>>(emptyMap())
     val mediaProgress: StateFlow<Map<String, Float>> = _mediaProgress
 
+    /**
+     * In-flight uploads, so the cancel button on a bubble can stop its own one.
+     * Keyed by message id, which only becomes known once the first progress
+     * callback arrives from the repository.
+     */
+    private val uploadJobs = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+
     fun sendMediaMessage(
         kind: com.neveroff.data.model.MediaKind,
         file: java.io.File,
         originalName: String? = null,
         onComplete: (Boolean) -> Unit = {}
     ) {
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             val (success, messageId) = repository.sendMediaMessage(chatId, kind, file, originalName) { msgId, progress ->
+                uploadJobs.putIfAbsent(msgId, requireNotNull(coroutineContext[kotlinx.coroutines.Job]))
                 _mediaProgress.value = _mediaProgress.value.toMutableMap().apply {
                     if (progress >= 1f) remove(msgId) else put(msgId, progress)
                 }
             }
-            if (!success && messageId != null) {
-                // Clear stuck progress if upload failed
+            if (messageId != null) {
+                uploadJobs.remove(messageId)
+                // Clear the ring whether it finished or failed; a failed row shows
+                // a retry affordance instead, and a stuck ring shows neither.
                 _mediaProgress.value = _mediaProgress.value.toMutableMap().apply { remove(messageId) }
             }
             onComplete(success)
         }
+        job.invokeOnCompletion { uploadJobs.values.remove(job) }
+    }
+
+    /** Stops an upload the sender changed their mind about, and removes the bubble. */
+    fun cancelMediaUpload(messageId: String) {
+        uploadJobs.remove(messageId)?.cancel()
+        _mediaProgress.value = _mediaProgress.value.toMutableMap().apply { remove(messageId) }
+        viewModelScope.launch { repository.discardPendingMedia(messageId) }
+    }
+
+    /** Re-sends a media message that failed, reusing its id so it cannot duplicate. */
+    fun retryMediaMessage(messageId: String) {
+        val job = viewModelScope.launch {
+            repository.retryMediaMessage(messageId) { msgId, progress ->
+                _mediaProgress.value = _mediaProgress.value.toMutableMap().apply {
+                    if (progress >= 1f) remove(msgId) else put(msgId, progress)
+                }
+            }
+            _mediaProgress.value = _mediaProgress.value.toMutableMap().apply { remove(messageId) }
+        }
+        uploadJobs[messageId] = job
     }
 
     fun deleteChat(onComplete: (Boolean) -> Unit) {

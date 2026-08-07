@@ -512,6 +512,66 @@ class ChatRepository(
     }
 
     /**
+     * Re-sends a media message that failed, reusing its id and its storage name.
+     *
+     * The plaintext survives in the media cache — the send path puts it there
+     * before uploading — so a retry does not need the original picked file,
+     * which by then has been cleaned up. Encryption produces a fresh key, so
+     * the body is rebuilt and the local row updated to match; that is safe
+     * precisely because nobody received the old body.
+     */
+    suspend fun retryMediaMessage(
+        messageId: String,
+        onProgress: ((String, Float) -> Unit)? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        val existing = db.messageDao().getMessageById(messageId) ?: return@withContext false
+        val envelope = MediaEnvelope.parse(existing.content) ?: return@withContext false
+        val cached = com.neveroff.util.MediaCache.decryptedFile(envelope.remoteName, envelope.extension)
+        if (!cached.exists()) {
+            Log.w(TAG, "Cannot retry $messageId: the local copy is gone")
+            return@withContext false
+        }
+
+        try {
+            db.messageDao().updateMessageStatus(messageId, 0)
+
+            val reEncrypted = java.io.File(com.neveroff.util.MediaCache.dir, "${envelope.remoteName}.retry")
+            val fileKey = com.neveroff.crypto.CryptoManager.encryptFile(cached, reEncrypted)
+            val text = MediaEnvelope.buildBody(
+                envelope.kind, envelope.remoteName, fileKey, envelope.originalName
+            )
+            db.messageDao().updateMessageContent(messageId, text)
+
+            val uploaded = uploadEncryptedMedia(envelope.remoteName, reEncrypted, messageId, onProgress)
+            reEncrypted.delete()
+            if (!uploaded) {
+                db.messageDao().updateMessageStatus(messageId, -1)
+                return@withContext false
+            }
+
+            val (ciphertext, msgKey) = com.neveroff.crypto.CryptoManager.encryptMessage(text, authKey)
+            sendMessageToRemoteWithRetry(messageId, existing.chatId, ciphertext, msgKey)
+        } catch (e: Exception) {
+            ErrorReporter.report(TAG, e)
+            db.messageDao().updateMessageStatus(messageId, -1)
+            false
+        }
+    }
+
+    /** Drops a media message the sender cancelled mid-upload, and its cached copy. */
+    suspend fun discardPendingMedia(messageId: String) = withContext(Dispatchers.IO) {
+        val existing = db.messageDao().getMessageById(messageId)
+        MediaEnvelope.parse(existing?.content.orEmpty())?.let { envelope ->
+            runCatching {
+                com.neveroff.util.MediaCache
+                    .decryptedFile(envelope.remoteName, envelope.extension)
+                    .delete()
+            }
+        }
+        db.messageDao().deleteMessage(messageId)
+    }
+
+    /**
      * PUTs the encrypted blob to storage under [remoteName], reporting progress.
      *
      * Retries once, which it can only do safely because [remoteName] is derived

@@ -930,6 +930,8 @@ fun ChatScreen(
                             onFullScreen = { m, uri -> fullScreenMessage = m; fullScreenMediaUri = uri },
                             onRetry = { id -> viewModel.retryMessage(id) },
                             uploadProgress = msg.id?.let { mediaProgress[it] },
+                            onCancelUpload = { id -> viewModel.cancelMediaUpload(id) },
+                            onRetryMedia = { id -> viewModel.retryMediaMessage(id) },
                             isSelected = selectedMessages.contains(msg.id),
                             isSelectionMode = isSelectionMode,
                             theme = currentTheme,
@@ -1278,6 +1280,8 @@ fun MessageBubble(
     onFullScreen: (UiMessage, Uri) -> Unit,
     onRetry: (String) -> Unit = {},
     uploadProgress: Float? = null,
+    onCancelUpload: (String) -> Unit = {},
+    onRetryMedia: (String) -> Unit = {},
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     onSelect: () -> Unit = {},
@@ -1649,15 +1653,22 @@ fun MessageBubble(
                             onClickFullScreen = { uri -> onFullScreen(msg, uri) },
                             onScrubStateChange = { scrub = it }
                         )
+                        MediaSendBadge(msg, uploadProgress, onCancelUpload, onRetryMedia)
                     }
                 } else if (msg.isMedia) {
-                    MediaMessagePlayer(
-                        messageText = msg.text,
-                        textColor = contentTextColor,
-                        uploadProgress = uploadProgress,
-                        onClickFullScreen = { uri -> onFullScreen(msg, uri) },
-                        onScrubStateChange = { scrub = it }
-                    )
+                    // The badge overlays the media rather than replacing it, so
+                    // the bubble keeps the media's own proportions from the
+                    // first frame instead of resizing when the upload lands.
+                    Box {
+                        MediaMessagePlayer(
+                            messageText = msg.text,
+                            textColor = contentTextColor,
+                            uploadProgress = uploadProgress,
+                            onClickFullScreen = { uri -> onFullScreen(msg, uri) },
+                            onScrubStateChange = { scrub = it }
+                        )
+                        MediaSendBadge(msg, uploadProgress, onCancelUpload, onRetryMedia)
+                    }
                 } else if (msg.channelLinkUsername != null && channelRepository != null) {
                     com.neveroff.ui.components.ChannelLinkCard(
                         username = msg.channelLinkUsername,
@@ -1834,4 +1845,32 @@ private fun AttachOption(
             Text(label, style = MaterialTheme.typography.bodyMedium)
         }
     }
+}
+
+/**
+ * Places [MediaUploadBadge] over the top-left of a media bubble.
+ *
+ * Top-left rather than centred: the centre of a photo is the photo, and the
+ * delivery tick that replaces this badge lives bottom-right, so the two never
+ * occupy the same corner.
+ */
+@Composable
+private fun BoxScope.MediaSendBadge(
+    msg: UiMessage,
+    uploadProgress: Float?,
+    onCancelUpload: (String) -> Unit,
+    onRetryMedia: (String) -> Unit
+) {
+    val id = msg.id ?: return
+    val state = when {
+        uploadProgress != null -> com.neveroff.ui.components.MediaSendState.Uploading(uploadProgress)
+        msg.status < 0 -> com.neveroff.ui.components.MediaSendState.Failed
+        else -> com.neveroff.ui.components.MediaSendState.Idle
+    }
+    com.neveroff.ui.components.MediaUploadBadge(
+        state = state,
+        onCancel = { onCancelUpload(id) },
+        onRetry = { onRetryMedia(id) },
+        modifier = Modifier.align(Alignment.TopStart).padding(6.dp)
+    )
 }
