@@ -18,6 +18,7 @@ import com.neveroff.data.model.ChannelReactionInsert
 import com.neveroff.data.model.ChannelSubscriber
 import com.neveroff.data.model.ChannelSubscriberInsert
 import com.neveroff.data.model.SocialPlatform
+import com.neveroff.data.model.normalizeReactionSet
 import com.neveroff.data.remote.SupabaseClient
 import com.neveroff.ui.screens.parseSupabaseTimestamp
 import io.github.jan.supabase.gotrue.auth
@@ -176,7 +177,7 @@ class ChannelRepository(
                     avatar_url = avatarUrl,
                     username = slug,
                     is_public = isPublic,
-                    allowed_reactions = allowedReactions.take(Channel.MAX_REACTIONS)
+                    allowed_reactions = normalizeReactionSet(allowedReactions).take(Channel.MAX_REACTIONS)
                 )
             )
 
@@ -213,7 +214,11 @@ class ChannelRepository(
                 set("is_public", isPublic)
                 if (!username.isNullOrBlank()) set("username", username)
                 if (avatarUrl != null) set("avatar_url", avatarUrl)
-                if (allowedReactions != null) set("allowed_reactions", allowedReactions.take(Channel.MAX_REACTIONS))
+                // Normalised, not just truncated: a duplicate spelling of the same
+                // emoji would otherwise eat a slot and trip channels_reactions_distinct.
+                if (allowedReactions != null) {
+                    set("allowed_reactions", normalizeReactionSet(allowedReactions).take(Channel.MAX_REACTIONS))
+                }
             }) {
                 filter { eq("id", channelId) }
             }

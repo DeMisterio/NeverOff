@@ -37,14 +37,21 @@ import androidx.compose.ui.unit.sp
 import com.neveroff.data.local.decodeReactionList
 import com.neveroff.data.model.Channel
 import com.neveroff.data.model.ChannelLinkScheme
+import com.neveroff.data.model.ReactionSetProblem
 import com.neveroff.data.model.SocialPlatform
+import com.neveroff.data.model.containsReaction
 import com.neveroff.data.model.isValidChannelUsername
+import com.neveroff.data.model.normalizeReactionSet
+import com.neveroff.data.model.reactionKey
+import com.neveroff.data.model.reactionSetProblem
 import com.neveroff.data.model.sanitizeChannelUsername
 import com.neveroff.data.repository.ChannelRepository
 import com.neveroff.ui.components.ChannelAvatar
 import com.neveroff.ui.components.SocialPlatformIcon
 import com.neveroff.ui.components.brandColor
 import com.neveroff.util.ImageHelper
+import com.neveroff.util.toUserMessage
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 private data class EditableLink(val id: Long, val platform: SocialPlatform, val url: String)
@@ -66,6 +73,7 @@ fun ChannelSettingsScreen(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val channel by repository.observeChannel(channelId).collectAsState(initial = null)
 
     var name by remember { mutableStateOf<String?>(null) }
@@ -130,7 +138,22 @@ fun ChannelSettingsScreen(
 
     val usernameChanged = username != current.username
     val usernameValid = isPublic != true || isValidChannelUsername(username.orEmpty())
-    val canSave = currentName.trim().length >= 2 && usernameValid && !isSaving
+
+    // Checked here rather than discovered from a 400: the server enforces the
+    // same range, and a rejected save used to surface as a raw Postgres
+    // constraint error.
+    val reactionProblem = reactionSetProblem(currentReactions)
+    val reactionHint = when (reactionProblem) {
+        ReactionSetProblem.EMPTY -> stringResource(R.string.reactions_need_one)
+        ReactionSetProblem.TOO_MANY ->
+            stringResource(R.string.reactions_too_many, Channel.MAX_REACTIONS)
+        ReactionSetProblem.NONE -> null
+    }
+
+    val canSave = currentName.trim().length >= 2 &&
+        usernameValid &&
+        reactionProblem == ReactionSetProblem.NONE &&
+        !isSaving
 
     Scaffold(
         topBar = {
@@ -282,9 +305,11 @@ fun ChannelSettingsScreen(
                 // readers may leave under a post.
                 SettingsLabel("Allowed reactions")
                 Text(
-                    text = "Pick up to ${Channel.MAX_REACTIONS}. Readers can only use these.",
+                    text = reactionHint
+                        ?: "${currentReactions.size} of ${Channel.MAX_REACTIONS} picked. Readers can only use these.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (reactionHint != null) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
                 ReactionChooser(
@@ -292,10 +317,17 @@ fun ChannelSettingsScreen(
                     onToggle = { emoji ->
                         val list = currentReactions.toMutableList()
                         when {
-                            emoji in list -> {
+                            // Compared by reactionKey, not by ==, so a stored "❤"
+                            // and a picker "❤️" count as the one reaction they are.
+                            list.containsReaction(emoji) -> {
                                 // Never leave a post with nothing to react with.
-                                if (list.size > 1) list.remove(emoji)
-                                else com.neveroff.ui.components.AppToast.show("Keep at least one reaction")
+                                if (list.size > Channel.MIN_REACTIONS) {
+                                    list.removeAll { reactionKey(it) == reactionKey(emoji) }
+                                } else {
+                                    com.neveroff.ui.components.AppToast.show(
+                                        context.getString(R.string.reactions_need_one)
+                                    )
+                                }
                             }
                             list.size >= Channel.MAX_REACTIONS ->
                                 com.neveroff.ui.components.AppToast.show(
@@ -303,7 +335,7 @@ fun ChannelSettingsScreen(
                                 )
                             else -> list.add(emoji)
                         }
-                        allowedReactions = list
+                        allowedReactions = normalizeReactionSet(list)
                     }
                 )
 
@@ -401,12 +433,21 @@ fun ChannelSettingsScreen(
                             isSaving = false
                             result
                                 .onSuccess {
-                                    com.neveroff.ui.components.AppToast.success("Channel updated")
+                                    com.neveroff.ui.components.AppToast.success(
+                                        context.getString(R.string.changes_saved)
+                                    )
                                     onBack()
                                 }
-                                .onFailure {
+                                .onFailure { error ->
+                                    // Never `error.message`: ktor builds it from the
+                                    // whole request, so it carries the URL and the
+                                    // Authorization: Bearer <JWT> header with it.
                                     com.neveroff.ui.components.AppToast.error(
-                                        it.message ?: "Couldn't save the changes"
+                                        error.toUserMessage(
+                                            context,
+                                            fallback = R.string.error_save_channel,
+                                            tag = "ChannelSettings"
+                                        )
                                     )
                                 }
                         }
@@ -474,7 +515,7 @@ private fun ReactionChooser(selected: List<String>, onToggle: (String) -> Unit) 
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             row.forEach { emoji ->
-                val isOn = emoji in selected
+                val isOn = selected.containsReaction(emoji)
                 Box(
                     modifier = Modifier
                         .weight(1f)

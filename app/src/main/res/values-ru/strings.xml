@@ -336,4 +336,27 @@
     <string name="board_open">Общая доска</string>
     <string name="board_ended">Доска закрыта</string>
     <string name="saved_messages_subtitle">Мои заметки и сообщения</string>
+
+    <!-- Что видит пользователь, когда запрос не удался. Технические подробности
+         сюда не попадают: см. util/UserFacingError.kt. -->
+    <string name="error_generic">Что-то пошло не так. Попробуйте ещё раз.</string>
+    <string name="error_no_connection">Нет подключения к интернету. Проверьте Wi-Fi, мобильный интернет или VPN и попробуйте снова.</string>
+    <string name="error_timed_out">Время ожидания истекло. Попробуйте ещё раз.</string>
+    <string name="error_too_many_attempts">Слишком много попыток. Подождите немного и попробуйте снова.</string>
+    <string name="error_session_expired">Сессия истекла. Войдите заново.</string>
+    <string name="error_already_taken">Уже занято.</string>
+    <string name="error_invalid_values">Эти настройки недопустимы. Проверьте их и попробуйте снова.</string>
+    <string name="error_not_allowed">У вас нет прав на это действие.</string>
+    <string name="error_server_trouble">Сервер сейчас недоступен. Попробуйте чуть позже.</string>
+    <string name="error_save_reactions">Не удалось сохранить реакции, попробуйте ещё раз.</string>
+    <string name="error_save_channel">Не удалось сохранить изменения. Попробуйте ещё раз.</string>
+    <string name="error_create_channel">Не удалось создать канал. Попробуйте ещё раз.</string>
+    <string name="error_send_code">Не удалось отправить код. Попробуйте ещё раз.</string>
+    <string name="error_upload_failed">Не удалось загрузить. Попробуйте ещё раз.</string>
+    <string name="error_save_failed">Не удалось сохранить. Попробуйте ещё раз.</string>
+    <string name="error_download_failed">Не удалось скачать. Попробуйте ещё раз.</string>
+    <string name="error_submit_failed">Не удалось отправить. Попробуйте ещё раз.</string>
+    <string name="changes_saved">Изменения сохранены</string>
+    <string name="reactions_need_one">Выберите хотя бы одну реакцию</string>
+    <string name="reactions_too_many">Выберите не больше %1$d реакций</string>
 </resources>

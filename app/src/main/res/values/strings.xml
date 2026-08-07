@@ -340,4 +340,27 @@
     <string name="board_open">Live board</string>
     <string name="board_ended">The board was closed</string>
     <string name="saved_messages_subtitle">My notes and messages</string>
+
+    <!-- What a user is shown when a request fails. The technical detail never
+         comes with it: see util/UserFacingError.kt. -->
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_no_connection">No internet connection. Check your Wi-Fi, mobile data or VPN and try again.</string>
+    <string name="error_timed_out">The connection timed out. Please try again.</string>
+    <string name="error_too_many_attempts">Too many attempts. Please wait a moment and try again.</string>
+    <string name="error_session_expired">Your session expired. Please sign in again.</string>
+    <string name="error_already_taken">That is already taken.</string>
+    <string name="error_invalid_values">Those settings aren\'t valid. Please check them and try again.</string>
+    <string name="error_not_allowed">You don\'t have permission to do that.</string>
+    <string name="error_server_trouble">The server is having trouble. Please try again shortly.</string>
+    <string name="error_save_reactions">Couldn\'t save the reactions. Please try again.</string>
+    <string name="error_save_channel">Couldn\'t save the changes. Please try again.</string>
+    <string name="error_create_channel">Couldn\'t create the channel. Please try again.</string>
+    <string name="error_send_code">Couldn\'t send the code. Please try again.</string>
+    <string name="error_upload_failed">Upload failed. Please try again.</string>
+    <string name="error_save_failed">Couldn\'t save. Please try again.</string>
+    <string name="error_download_failed">Download failed. Please try again.</string>
+    <string name="error_submit_failed">Couldn\'t send that. Please try again.</string>
+    <string name="changes_saved">Changes saved</string>
+    <string name="reactions_need_one">Pick at least one reaction</string>
+    <string name="reactions_too_many">Pick no more than %1$d reactions</string>
 </resources>

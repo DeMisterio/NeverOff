@@ -102,8 +102,69 @@ data class Channel(
          * Ten rather than six: the grid wraps, so the old cap was a choice
          * about clutter rather than a layout limit, and channels with a broad
          * audience were running out of room to express anything but agreement.
+         *
+         * Mirrored by the `channels_reactions_limit` CHECK constraint. Raising
+         * this without shipping a migration is what made saves fail with a raw
+         * Postgres constraint error — see 09_channel_reactions_limit.sql.
          */
         const val MAX_REACTIONS = 10
+
+        /** Every set needs something in it, or a post has nothing to react with. */
+        const val MIN_REACTIONS = 1
+    }
+}
+
+/**
+ * The identity of a reaction for comparison, as opposed to for display.
+ *
+ * U+FE0F and U+FE0E are presentation selectors: they only say "render the
+ * preceding character as emoji" or "as text". `❤` and `❤️` are one reaction to
+ * a reader and two different strings to `==`. The array literal in the
+ * migration, the literals in [Channel.AVAILABLE_REACTIONS] and whatever comes
+ * back over the wire all have to agree, and a selector that survives one round
+ * trip but not another silently turns one reaction into two — which then trips
+ * the distinctness constraint on save.
+ *
+ * ZWJ (U+200D) is deliberately kept. It joins codepoints into a genuinely
+ * different emoji, so stripping it would merge reactions that are not the same.
+ */
+fun reactionKey(emoji: String): String =
+    emoji.filter { it != VARIATION_SELECTOR_16 && it != VARIATION_SELECTOR_15 }
+
+private const val VARIATION_SELECTOR_16 = '\uFE0F' // force emoji presentation
+private const val VARIATION_SELECTOR_15 = '\uFE0E' // force text presentation
+
+/** True when [emoji] is already in [reactions], comparing by [reactionKey]. */
+fun List<String>.containsReaction(emoji: String): Boolean =
+    any { reactionKey(it) == reactionKey(emoji) }
+
+/**
+ * Drops blanks and repeats, keeping the owner's chosen order and the first
+ * spelling of each reaction. Applied before sending so the server never sees a
+ * set it would reject.
+ */
+fun normalizeReactionSet(reactions: List<String>): List<String> {
+    val seen = mutableSetOf<String>()
+    return reactions.mapNotNull { emoji ->
+        val trimmed = emoji.trim()
+        when {
+            trimmed.isEmpty() -> null
+            !seen.add(reactionKey(trimmed)) -> null
+            else -> trimmed
+        }
+    }
+}
+
+/** Why a reaction set cannot be saved, or [ReactionSetProblem.NONE] if it can. */
+enum class ReactionSetProblem { NONE, EMPTY, TOO_MANY }
+
+/** Mirrors `channels_reactions_limit` and `channels_reactions_distinct` on the client. */
+fun reactionSetProblem(reactions: List<String>): ReactionSetProblem {
+    val normalized = normalizeReactionSet(reactions)
+    return when {
+        normalized.size < Channel.MIN_REACTIONS -> ReactionSetProblem.EMPTY
+        normalized.size > Channel.MAX_REACTIONS -> ReactionSetProblem.TOO_MANY
+        else -> ReactionSetProblem.NONE
     }
 }
 

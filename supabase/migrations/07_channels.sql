@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS channels (
   -- channels get a random unguessable slug so "share by link" still works.
   username TEXT NOT NULL UNIQUE,
   is_public BOOLEAN NOT NULL DEFAULT TRUE,
-  -- Reactions the owner allows on posts, in display order. Max 6 (3x2 grid).
+  -- Reactions the owner allows on posts, in display order.
+  -- NOTE: the 1..6 limit below was widened to 1..10 in 09_channel_reactions_limit.sql.
   allowed_reactions TEXT[] NOT NULL DEFAULT ARRAY['❤️', '👍', '👎', '🤡', '⚡', '😍'],
   subscriber_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
