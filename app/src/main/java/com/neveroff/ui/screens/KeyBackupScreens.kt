@@ -315,7 +315,11 @@ fun ChatBackupSettingsSection() {
         androidx.compose.ui.window.Dialog(
             onDismissRequest = { showSetup = false },
             properties = androidx.compose.ui.window.DialogProperties(
-                usePlatformDefaultWidth = false
+                usePlatformDefaultWidth = false,
+                // Keep the platform dim behind the window, so anything the
+                // content does not cover reads as "behind the dialog" rather
+                // than as part of it.
+                decorFitsSystemWindows = true
             )
         ) {
             SetBackupPassphraseScreen(

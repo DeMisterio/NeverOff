@@ -12,6 +12,11 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -271,6 +276,14 @@ fun ChannelProfileScreen(
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
+                    // Scaffold's inset covers the status bar but not a display
+                    // cutout, so on a phone with a punch-hole near the corner
+                    // the top-left of this circle ended up underneath it.
+                    .windowInsetsPadding(
+                        WindowInsets.displayCutout.only(
+                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+                        )
+                    )
                     .padding(16.dp)
                     .align(Alignment.TopStart)
                     .background(Color.Black.copy(alpha = 0.4f), CircleShape)
