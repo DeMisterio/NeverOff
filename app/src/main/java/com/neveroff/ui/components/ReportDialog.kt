@@ -175,6 +175,7 @@ fun ReportDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 label = { Text(stringResource(R.string.anything_else_we_should_know_optional)) },
                                 minLines = 3,
+                                maxLines = 8,
                                 shape = RoundedCornerShape(12.dp)
                             )
 

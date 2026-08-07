@@ -181,37 +181,54 @@ fun ChannelSettingsScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Two boxes, not one. The badge used to live inside the
+                    // clipped avatar container, so the avatar's rounded-rect clip
+                    // cut the corner off it. The clip now applies only to the
+                    // picture; the badge is a sibling in an outer box that does
+                    // not clip, free to overhang the edge.
                     Box(
                         modifier = Modifier
-                            .size(76.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .size(86.dp)
                             .clickable {
                                 avatarLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
-                            },
-                        contentAlignment = Alignment.Center
+                            }
                     ) {
-                        val bitmap = avatarBitmap
-                        if (bitmap != null) {
-                            androidx.compose.foundation.Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = stringResource(R.string.channel_picture),
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        } else {
-                            ChannelAvatar(
-                                avatarUrl = current.avatarUrl,
-                                name = currentName,
-                                size = 76.dp,
-                                shape = RoundedCornerShape(24.dp)
-                            )
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .align(Alignment.TopStart)
+                                .clip(RoundedCornerShape(24.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val bitmap = avatarBitmap
+                            if (bitmap != null) {
+                                androidx.compose.foundation.Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = stringResource(R.string.channel_picture),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                ChannelAvatar(
+                                    avatarUrl = current.avatarUrl,
+                                    name = currentName,
+                                    size = 76.dp,
+                                    shape = RoundedCornerShape(24.dp)
+                                )
+                            }
                         }
+
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(26.dp)
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                // A ring in the screen's own background colour, so
+                                // the badge stays legible over a busy avatar.
+                                .background(MaterialTheme.colorScheme.background)
+                                .padding(2.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary),
                             contentAlignment = Alignment.Center
@@ -277,8 +294,9 @@ fun ChannelSettingsScreen(
                         }
                         Switch(
                             checked = isPublic == true,
-                            onCheckedChange = { isPublic = it }
-                        )
+                            onCheckedChange = { isPublic = it },
+                        colors = com.neveroff.ui.components.appSwitchColors()
+                    )
                     }
                 }
 
@@ -573,6 +591,9 @@ private fun SettingsField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     minLines: Int = 1,
+    // Capped so a long description grows to a readable height and then scrolls,
+    // instead of pushing the rest of the form off the screen.
+    maxLines: Int = INPUT_FIELD_MAX_LINES,
     prefix: String? = null,
     isError: Boolean = false,
     supportingText: String? = null
@@ -584,8 +605,9 @@ private fun SettingsField(
         placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = singleLine,
         minLines = minLines,
+        maxLines = maxLines,
         isError = isError,
-        shape = RoundedCornerShape(14.dp),
+        shape = INPUT_FIELD_SHAPE,
         prefix = prefix?.let {
             {
                 Text(it, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)

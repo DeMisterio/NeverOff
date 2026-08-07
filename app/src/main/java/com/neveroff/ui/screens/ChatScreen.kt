@@ -668,7 +668,11 @@ fun ChatScreen(
                             value = inputText,
                             onValueChange = { if (it.length <= 4000) inputText = it },
                             modifier = Modifier.weight(1f),
-                            shape = CircleShape,
+                            // A fixed radius, not CircleShape. CircleShape is
+                            // 50% of the height, so the corners grew with the
+                            // text until the field was a capsule and the words
+                            // ran out past the curve.
+                            shape = INPUT_FIELD_SHAPE,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -687,7 +691,9 @@ fun ChatScreen(
                             // visibly unusable, no focus, no keyboard.
                             enabled = !sendBlocked,
                             singleLine = false,
-                            maxLines = 4
+                            // Grows to six lines, then scrolls inside itself
+                            // rather than pushing the send button off screen.
+                            maxLines = INPUT_FIELD_MAX_LINES
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))

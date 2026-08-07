@@ -92,17 +92,26 @@ fun formatTime(timestamp: Long): String {
  */
 @Composable
 fun AuthGradientBackground(content: @Composable BoxScope.() -> Unit) {
+    // Opaque, deliberately.
+    //
+    // The lower stop used to be surfaceVariant at 55% alpha. On a full screen
+    // that is harmless, because nothing is behind it. But this same composable
+    // backs the "Change password" screen when it is shown inside a Dialog, and
+    // a Dialog window is transparent — so the settings screen underneath was
+    // legible straight through the bottom half of the gradient and the two
+    // sets of text fought each other.
+    //
+    // Blending against the background rather than dropping the stop keeps the
+    // gradient looking the way it was drawn, on screens and in dialogs alike.
+    val base = MaterialTheme.colorScheme.background
+    val tint = com.neveroff.ui.theme.ChatAppearance.blend(
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        base
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                    )
-                )
-            )
+            .background(Brush.verticalGradient(listOf(base, tint)))
     ) {
         content()
     }
@@ -138,3 +147,15 @@ fun StatusTicks(status: Int, color: Color = MaterialTheme.colorScheme.onSurfaceV
     }
     }
 }
+
+/**
+ * The corner radius every text input in the app uses.
+ *
+ * Fixed in dp, deliberately. CircleShape and RoundedCornerShape(percent) both
+ * scale the radius with the height, so a field that grows with its text turns
+ * into a capsule and then a circle, with the text spilling past the curve.
+ */
+val INPUT_FIELD_SHAPE = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+
+/** Roughly six lines, after which an input scrolls inside itself. */
+const val INPUT_FIELD_MAX_LINES = 6

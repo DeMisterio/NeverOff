@@ -477,10 +477,12 @@ private fun PostComposer(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            shape = CircleShape,
+            // Fixed radius: CircleShape scales with height, so a long post
+            // rounded the field into a capsule.
+            shape = INPUT_FIELD_SHAPE,
             placeholder = { Text(stringResource(R.string.write_a_post)) },
             singleLine = false,
-            maxLines = 5,
+            maxLines = INPUT_FIELD_MAX_LINES,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
