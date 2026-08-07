@@ -553,7 +553,8 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
                     }
                     Switch(
                         checked = useAccentPalette,
-                        onCheckedChange = { SettingsManager.setUseAccentPalette(it) }
+                        onCheckedChange = { SettingsManager.setUseAccentPalette(it) },
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
 
@@ -885,7 +886,8 @@ private fun AnimationsCategoryScreen() {
                     Switch(
                         checked = stretchiness,
                         onCheckedChange = { SettingsManager.setStretchiness(it) },
-                        enabled = allAnimations
+                        enabled = allAnimations,
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
             }
@@ -978,7 +980,8 @@ private fun PrivacyCategoryScreen() {
                     Text(stringResource(R.string.send_read_receipts_seen), style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = seenSelf,
-                        onCheckedChange = { SettingsManager.setSeenIndicatorSelf(it) }
+                        onCheckedChange = { SettingsManager.setSeenIndicatorSelf(it) },
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
             }
@@ -994,7 +997,8 @@ private fun PrivacyCategoryScreen() {
                     Text(stringResource(R.string.show_partner_read_receipts), style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = seenOthers,
-                        onCheckedChange = { SettingsManager.setSeenIndicatorOthers(it) }
+                        onCheckedChange = { SettingsManager.setSeenIndicatorOthers(it) },
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
             }
@@ -1115,7 +1119,8 @@ private fun DeveloperCategoryScreen() {
                     Text(stringResource(R.string.enable_debug_panel), style = MaterialTheme.typography.titleMedium)
                     Switch(
                         checked = debugEnabled,
-                        onCheckedChange = { SettingsManager.setDebugPanelEnabled(it) }
+                        onCheckedChange = { SettingsManager.setDebugPanelEnabled(it) },
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
             }
@@ -1131,7 +1136,8 @@ private fun DeveloperCategoryScreen() {
                     Text(stringResource(R.string.auto_save_diagnostic_logs), style = MaterialTheme.typography.titleMedium)
                     Switch(
                         checked = autoSaveLogs,
-                        onCheckedChange = { SettingsManager.setAutoSaveLogs(it) }
+                        onCheckedChange = { SettingsManager.setAutoSaveLogs(it) },
+                        colors = com.neveroff.ui.components.appSwitchColors()
                     )
                 }
             }
@@ -1255,8 +1261,9 @@ private fun UpdatesSettingsSection() {
                         // Turning it on with an update already waiting should act immediately
                         // rather than only from the next check.
                         if (enabled) com.neveroff.util.UpdateController.maybeAutoDownload(context)
-                    }
-                )
+                    },
+                        colors = com.neveroff.ui.components.appSwitchColors()
+                    )
             }
 
             if (available != null) {

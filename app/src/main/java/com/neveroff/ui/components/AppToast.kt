@@ -116,3 +116,25 @@ fun AppToastHost(modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * Switch colours with no outline.
+ *
+ * Material 3 draws a 2dp border around a Switch's track whenever it is
+ * unchecked, which reads as a stray ring around the control rather than as
+ * part of it — most visibly on the channel settings "Public" toggle. The track
+ * already carries a fill and a contrasting thumb, so the border is doing no
+ * work that is not already done.
+ *
+ * Focus is not lost by removing it: the M3 Switch shows focus as a state-layer
+ * halo behind the thumb, which is a fill change rather than a contour, and is
+ * what the accessibility guidance asks for anyway.
+ */
+@Composable
+fun appSwitchColors(): androidx.compose.material3.SwitchColors =
+    androidx.compose.material3.SwitchDefaults.colors(
+        uncheckedBorderColor = Color.Transparent,
+        checkedBorderColor = Color.Transparent,
+        disabledUncheckedBorderColor = Color.Transparent,
+        disabledCheckedBorderColor = Color.Transparent
+    )
