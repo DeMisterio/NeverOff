@@ -84,9 +84,14 @@ class ChatViewModel(
     private val _mediaProgress = kotlinx.coroutines.flow.MutableStateFlow<Map<String, Float>>(emptyMap())
     val mediaProgress: StateFlow<Map<String, Float>> = _mediaProgress
 
-    fun sendMediaMessage(prefix: String, file: java.io.File, onComplete: (Boolean) -> Unit) {
+    fun sendMediaMessage(
+        kind: com.neveroff.data.model.MediaKind,
+        file: java.io.File,
+        originalName: String? = null,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
         viewModelScope.launch {
-            val (success, messageId) = repository.sendMediaMessage(chatId, prefix, file) { msgId, progress ->
+            val (success, messageId) = repository.sendMediaMessage(chatId, kind, file, originalName) { msgId, progress ->
                 _mediaProgress.value = _mediaProgress.value.toMutableMap().apply {
                     if (progress >= 1f) remove(msgId) else put(msgId, progress)
                 }

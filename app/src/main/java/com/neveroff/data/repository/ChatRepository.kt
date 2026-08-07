@@ -33,6 +33,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 import io.github.jan.supabase.gotrue.auth
 import com.neveroff.BuildConfig
+import com.neveroff.data.model.MediaEnvelope
+import com.neveroff.data.model.MediaKind
 import com.neveroff.util.ErrorReporter
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
@@ -428,7 +430,14 @@ class ChatRepository(
      * storage object and the message row both land on the same names no matter
      * how many times this runs, so a retry overwrites rather than duplicates.
      */
-    suspend fun sendMediaMessage(chatId: String, prefix: String, file: java.io.File, onProgress: ((String, Float) -> Unit)? = null): Pair<Boolean, String?> {
+    suspend fun sendMediaMessage(
+        chatId: String,
+        kind: MediaKind,
+        file: java.io.File,
+        /** The name the user's file had, for anything picked rather than captured. */
+        originalName: String? = null,
+        onProgress: ((String, Float) -> Unit)? = null
+    ): Pair<Boolean, String?> {
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             var newMessageId: String? = null
             try {
@@ -445,24 +454,16 @@ class ChatRepository(
                 newMessageId = java.util.UUID.randomUUID().toString()
                 val remoteName = "$newMessageId.enc"
 
-                // Cache the file locally so MediaMessagePlayer can find it instantly
-                val ext = when {
-                    prefix == "VOICE" -> "m4a"
-                    prefix == "VIDEO" || prefix == "FILE_VIDEO" -> "mp4"
-                    prefix == "IMAGE" -> "jpg"
-                    // "FILE:report.pdf" — keep the real extension so the cached
-                    // copy can be opened by whatever handles that type. Writing
-                    // everything as ".file" left the receiver with a blob no
-                    // app would claim.
-                    prefix.startsWith("FILE:") ->
-                        com.neveroff.util.FileKind.extensionOf(prefix.removePrefix("FILE:"))
-                            .ifEmpty { "file" }
-                    else -> "file"
+                val text = MediaEnvelope.buildBody(kind, remoteName, fileKeyBase64, originalName)
+
+                // Cache the decrypted copy under the same name the receiving side
+                // will look for, with the real extension so whatever opens that
+                // type can claim it. Writing everything as ".file" left a blob no
+                // app would take.
+                val ext = MediaEnvelope.parse(text)?.extension ?: "file"
+                runCatching {
+                    file.copyTo(com.neveroff.util.MediaCache.decryptedFile(remoteName, ext), overwrite = true)
                 }
-                val cachedFile = java.io.File(file.parent, "dec_${remoteName}.$ext")
-                file.copyTo(cachedFile, overwrite = true)
-                
-                val text = "[$prefix] $remoteName $fileKeyBase64"
 
                 val entity = com.neveroff.data.local.MessageEntity(
                     id = newMessageId,

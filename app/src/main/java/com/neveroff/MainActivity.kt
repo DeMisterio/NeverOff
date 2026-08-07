@@ -87,6 +87,7 @@ class MainActivity : FragmentActivity() {
         com.neveroff.util.AppLanguage.init(applicationContext)
         SettingsManager.init(applicationContext)
         com.neveroff.util.LoggerManager.init(applicationContext)
+        com.neveroff.util.MediaCache.init(applicationContext)
         com.neveroff.util.LoggerManager.setupGlobalExceptionHandler()
         intentState.value = intent
 

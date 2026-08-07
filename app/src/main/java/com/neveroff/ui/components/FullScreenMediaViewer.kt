@@ -38,6 +38,7 @@ import com.neveroff.ui.screens.UiMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.neveroff.data.model.MediaEnvelope
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -58,7 +59,10 @@ fun FullScreenMediaViewer(
 
     BackHandler { onDismiss() }
 
-    val isVideo = message.text.startsWith("[FILE_VIDEO]")
+    // Any video, however it was sent — a clip picked from Files is still a
+    // video, and used to fall through to the image branch here.
+    val envelope = remember(message.text) { MediaEnvelope.parse(message.text) }
+    val isVideo = envelope?.isVideo == true
     
     var scale by remember { mutableStateOf(1f) }
     var offsetX by remember { mutableStateOf(0f) }
@@ -142,7 +146,15 @@ fun FullScreenMediaViewer(
                     DropdownMenuItem(text = { Text(stringResource(R.string.save_to_gallery)) }, onClick = {
                         showMenu = false
                         scope.launch {
-                            val success = saveMediaToGallery(context, uri, isVideo)
+                            val success = saveMediaToGallery(
+                                context = context,
+                                sourceUri = uri,
+                                isVideo = isVideo,
+                                displayName = envelope?.saveAsName(System.currentTimeMillis())
+                                    ?: "NeverOff_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}",
+                                mimeType = envelope?.mimeType
+                                    ?: if (isVideo) "video/mp4" else "image/jpeg"
+                            )
                             if (success) {
                                 AppToast.success("Saved to Gallery")
                             } else {
@@ -197,13 +209,27 @@ fun FullScreenMediaViewer(
     }
 }
 
-suspend fun saveMediaToGallery(context: Context, sourceUri: Uri, isVideo: Boolean): Boolean {
+/**
+ * Copies a decrypted file into the gallery.
+ *
+ * [displayName] and [mimeType] come from the message envelope, so a file keeps
+ * the name it was sent under and lands as the type it actually is. Both used to
+ * be invented here from a boolean, which renamed everything to NeverOff_<millis>
+ * and declared every video mp4 regardless of what it was.
+ */
+suspend fun saveMediaToGallery(
+    context: Context,
+    sourceUri: Uri,
+    isVideo: Boolean,
+    displayName: String,
+    mimeType: String
+): Boolean {
     return withContext(Dispatchers.IO) {
         try {
             val contentResolver = context.contentResolver
             val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, "NeverOff_${System.currentTimeMillis()}.${if (isVideo) "mp4" else "jpg"}")
-                put(MediaStore.MediaColumns.MIME_TYPE, if (isVideo) "video/mp4" else "image/jpeg")
+                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     put(MediaStore.MediaColumns.RELATIVE_PATH, if (isVideo) "Movies/NeverOff" else "Pictures/NeverOff")
                     put(MediaStore.MediaColumns.IS_PENDING, 1)

@@ -36,6 +36,8 @@ import io.github.jan.supabase.gotrue.auth
 
 import coil.compose.AsyncImage
 import com.neveroff.crypto.CryptoManager
+import com.neveroff.data.model.MediaEnvelope
+import com.neveroff.data.model.MediaKind
 import com.neveroff.data.remote.SupabaseClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,56 +59,50 @@ fun MediaMessagePlayer(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    val isVoice = messageText.startsWith("[VOICE]")
-    val isVideo = messageText.startsWith("[VIDEO]")
-    
+    val envelope = remember(messageText) { MediaEnvelope.parse(messageText) }
+    val isVoice = envelope?.kind == MediaKind.VOICE
+    // "isVideo" here has always meant the round note specifically.
+    val isVideo = envelope?.kind == MediaKind.VIDEO_NOTE
+    val isFileVideo = envelope?.kind == MediaKind.VIDEO
+
     var localFileUri by remember { mutableStateOf<Uri?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf(0f) }
     var isDownloading by remember { mutableStateOf(true) }
     var retryTrigger by remember { mutableStateOf(0) }
 
-    val isFileVideo = messageText.startsWith("[FILE_VIDEO]")
-    
     val exoPlayer = remember {
         com.neveroff.media.ExoPlayerPool.acquire(context).apply {
             repeatMode = if (isVideo || isFileVideo) ExoPlayer.REPEAT_MODE_ALL else ExoPlayer.REPEAT_MODE_OFF
-            if (isVideo) volume = 0f // Mute video circles by default
-            if (isFileVideo) volume = 1f // Unmute normal videos
+            // Both video kinds preview silently. This is a list of bubbles, and
+            // a rectangular video used to start playing out loud as soon as it
+            // scrolled into view. Sound belongs to the full-screen player, and
+            // tapping a round note still unmutes it in place.
+            if (isVideo || isFileVideo) volume = 0f
         }
     }
 
     LaunchedEffect(messageText, retryTrigger) {
-        if (!isVoice && !isVideo && !messageText.startsWith("[IMAGE]") && !messageText.startsWith("[FILE:")) return@LaunchedEffect
-        
-        // Format: [PREFIX] remoteName fileKeyBase64
-        val parts = messageText.split(" ")
-        if (parts.size >= 3) {
-            val remoteName = parts[1]
-            val fileKey = parts[2]
-            
+        // Every media kind downloads through here. The old guard listed prefixes
+        // by hand and omitted [FILE_VIDEO], so a video sent through the file
+        // picker sat on a spinner that could never finish.
+        val media = envelope ?: return@LaunchedEffect
+        run {
+            val remoteName = media.remoteName
+            val fileKey = media.fileKey
+
             withContext(Dispatchers.IO) {
                 try {
-                    val ext = when {
-                        isVoice -> "m4a"
-                        isVideo || isFileVideo -> "mp4"
-                        messageText.startsWith("[IMAGE]") -> "jpg"
-                        // Mirror the sender: keep the real extension so the
-                        // decrypted copy can be opened by whatever handles that
-                        // type. Writing everything as ".file" left the receiver
-                        // with a blob no app would claim.
-                        messageText.startsWith("[FILE:") ->
-                            com.neveroff.util.FileKind
-                                .extensionOf(messageText.substringAfter("[FILE:").substringBefore("]"))
-                                .ifEmpty { "file" }
-                        else -> "file"
-                    }
-                    val decryptedFile = File(context.cacheDir, "dec_${remoteName}.$ext")
-                    
+                    // The extension comes from the original filename where there
+                    // is one, so the decrypted copy can be opened by whatever
+                    // handles that type.
+                    val decryptedFile = com.neveroff.util.MediaCache
+                        .decryptedFile(remoteName, media.extension)
+
                     if (!decryptedFile.exists()) {
                         val url = "${com.neveroff.BuildConfig.SUPABASE_URL}/storage/v1/object/chat_media/$remoteName"
-                        val encryptedFile = File(context.cacheDir, "enc_$remoteName")
-                        
+                        val encryptedFile = com.neveroff.util.MediaCache.encryptedFile(remoteName)
+
                         // Download with progress using HttpURLConnection
                         val urlObj = java.net.URL(url)
                         val connection = urlObj.openConnection() as java.net.HttpURLConnection
@@ -149,14 +145,12 @@ fun MediaMessagePlayer(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    com.neveroff.util.ErrorReporter.report("MediaMessagePlayer", e)
                     withContext(Dispatchers.Main) {
                         isDownloading = false
                     }
                 }
             }
-        } else {
-            isDownloading = false
         }
     }
 
@@ -293,6 +287,17 @@ fun MediaMessagePlayer(
                 ) { surface() }
             }
         } else {
+            // Rectangular video: silent looping preview, duration in the corner,
+            // tap for the full-screen player with real controls.
+            var durationMs by remember { mutableStateOf(0L) }
+            LaunchedEffect(localFileUri) {
+                while (durationMs <= 0L) {
+                    val d = exoPlayer.duration
+                    if (d > 0) durationMs = d
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
             Box(
                 modifier = viewModifier
                     .clip(shape)
@@ -302,9 +307,34 @@ fun MediaMessagePlayer(
                             onClickFullScreen(localFileUri!!)
                         }
                     }
-            ) { surface() }
+            ) {
+                surface()
+
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        text = formatDuration(durationMs),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
         }
-    } else if (messageText.startsWith("[IMAGE]")) {
+    } else if (envelope?.kind == MediaKind.IMAGE) {
         AsyncImage(
             model = localFileUri,
             contentDescription = stringResource(R.string.label_image),
@@ -319,10 +349,10 @@ fun MediaMessagePlayer(
                     }
                 }
         )
-    } else if (messageText.startsWith("[FILE:")) {
-        val fileName = messageText.substringAfter("[FILE:").substringBefore("]")
+    } else if (envelope?.kind == MediaKind.FILE) {
+        val fileName = envelope.originalName ?: stringResource(R.string.file)
         val kind = com.neveroff.util.FileKind.of(fileName)
-        val ext = com.neveroff.util.FileKind.extensionOf(fileName)
+        val ext = envelope.extension.takeIf { it != "file" }.orEmpty()
         val sizeLabel = localFileUri?.let { uri ->
             runCatching {
                 java.io.File(uri.path ?: "").takeIf { it.exists() }
