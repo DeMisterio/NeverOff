@@ -12,8 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,10 +32,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.neveroff.data.local.ChannelPostEntity
+import com.neveroff.data.model.Channel
 import com.neveroff.data.local.decodeReactionCounts
 import com.neveroff.ui.screens.formatTime
 
@@ -305,9 +309,9 @@ fun ChannelPostItem(
 }
 
 /**
- * Reaction pills, at most six in a 3x2 grid. Reactions nobody has picked yet are
- * not shown as empty pills — instead the trailing "add" button opens the full
- * picker, so a fresh post stays quiet instead of showing six zeroes.
+ * Reaction pills, three to a row. Reactions nobody has picked yet are not shown
+ * as empty pills — instead the trailing "add" button opens the full picker, so
+ * a fresh post stays quiet instead of showing a row of zeroes.
  */
 @Composable
 private fun ReactionGrid(
@@ -318,8 +322,12 @@ private fun ReactionGrid(
     onOpenPicker: () -> Unit
 ) {
     // Keep the owner's configured order, and only show what somebody has used.
-    val used = allowedReactions.filter { (counts[it] ?: 0) > 0 }.take(6)
-    val showAddButton = used.size < 6 && allowedReactions.isNotEmpty()
+    //
+    // The cap is MAX_REACTIONS, not the six this grid was first drawn for.
+    // Once an owner could allow ten, a hardcoded six silently dropped the four
+    // least-recently-configured reactions along with the votes cast on them.
+    val used = allowedReactions.filter { (counts[it] ?: 0) > 0 }.take(Channel.MAX_REACTIONS)
+    val showAddButton = used.size < Channel.MAX_REACTIONS && allowedReactions.isNotEmpty()
 
     val cells: List<@Composable () -> Unit> = buildList {
         used.forEach { emoji ->
@@ -335,7 +343,9 @@ private fun ReactionGrid(
         if (showAddButton) add { AddReactionPill(onClick = onOpenPicker) }
     }
 
-    // Three per row, two rows max — the grid the design calls for.
+    // Three per row — the grid the design calls for. It wraps to as many rows as
+    // the used reactions need rather than stopping at two, since stopping meant
+    // discarding real counts.
     cells.chunked(3).forEach { row ->
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
@@ -457,6 +467,12 @@ private fun CommentsSoonPill() {
 /**
  * The long pill that slides up when you tap "+": every reaction this channel
  * allows, in one row, big enough to hit without aiming.
+ *
+ * The row scrolls. A plain Row lays its children out past the edge of the
+ * screen and simply clips whatever does not fit, with no way to reach it — at
+ * 46dp a cell plus spacing, a full set needs about 540dp of width, which no
+ * phone has. That was survivable while a channel could allow at most six
+ * reactions and became unreachable content at ten.
  */
 @Composable
 fun ReactionPickerPanel(
@@ -465,6 +481,19 @@ fun ReactionPickerPanel(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+
+    // Open on the reaction already picked, rather than making someone scroll to
+    // find where they are before they can change it.
+    LaunchedEffect(myReaction, allowedReactions) {
+        val index = allowedReactions.indexOf(myReaction)
+        if (index > 0) {
+            val stride = with(density) { (REACTION_CELL_SIZE + REACTION_CELL_GAP).roundToPx() }
+            scrollState.animateScrollTo(index * stride)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -490,15 +519,17 @@ fun ReactionPickerPanel(
                 )
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .horizontalScroll(scrollState)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(REACTION_CELL_GAP),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 allowedReactions.forEach { emoji ->
                     val isMine = emoji == myReaction
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(REACTION_CELL_SIZE)
                             .clip(CircleShape)
                             .then(
                                 if (isMine) Modifier.background(
@@ -520,3 +551,7 @@ fun ReactionPickerPanel(
         }
     }
 }
+
+/** Big enough to hit without aiming. */
+private val REACTION_CELL_SIZE = 46.dp
+private val REACTION_CELL_GAP = 6.dp
