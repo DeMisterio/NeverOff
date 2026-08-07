@@ -51,6 +51,8 @@ import com.neveroff.ui.theme.Hsl
 import com.neveroff.ui.theme.toColor
 import com.neveroff.ui.theme.toHsl
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -310,6 +312,39 @@ fun ChatScreen(
     val wallpaperImageUri by SettingsManager.wallpaperImageUriFlow.collectAsState()
     val wallpaperBlur by SettingsManager.wallpaperBlurFlow.collectAsState()
     val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    // --- Video note recording choreography ---------------------------------
+    //
+    // Three pieces have to agree: the list blurs while the viewfinder is up,
+    // the viewfinder draws above the list, and on release it travels to where
+    // the new bubble lands instead of vanishing on the spot.
+
+    /** 1 while the viewfinder is up, 0 otherwise. Drives the list blur. */
+    val recordingBlurRadius by animateFloatAsState(
+        targetValue = if (isRecordingVideo) RECORDING_BLUR_DP else 0f,
+        animationSpec = tween(durationMillis = 260),
+        label = "recordingBlur"
+    )
+
+    /** Non-zero while the circle is in flight towards its bubble. */
+    var videoNoteFlight by remember { mutableStateOf(0f) }
+    val videoNoteFlightProgress by animateFloatAsState(
+        targetValue = videoNoteFlight,
+        // The same spring family bubbles arrive on, so the circle settling and
+        // the bubble appearing read as one motion rather than two.
+        animationSpec = spring(
+            dampingRatio = if (allAnimationsEnabled) {
+                (0.8f - (bouncinessFactor * 0.4f)).coerceIn(0.3f, 0.9f)
+            } else {
+                1f
+            },
+            stiffness = 180f
+        ),
+        label = "videoNoteFlight",
+        finishedListener = { if (it >= 1f) videoNoteFlight = 0f }
+    )
+
+    val flightDistancePx = with(LocalDensity.current) { 260.dp.toPx() }
 
     val baseTheme = AvailableChatThemes.find { it.name == chatTheme } ?: AvailableChatThemes.first()
 
@@ -750,6 +785,9 @@ fun ChatScreen(
                                     cameraHelper.startRecording { file ->
                                         if (file != null) {
                                             // A round note, because the circle recorder produced it.
+                                            // Start the flight before the send so the circle is
+                                            // already travelling when the bubble appears.
+                                            videoNoteFlight = 1f
                                             viewModel.sendMediaMessage(MediaKind.VIDEO_NOTE, file)
                                         } else {
                                             com.neveroff.ui.components.AppToast.error("Recording too short")
@@ -936,18 +974,6 @@ fun ChatScreen(
             } else {
                 Box(modifier = wallpaperModifier.background(backgroundBrush))
             }
-            if (isRecordingVideo) {
-                // Centred and large: while recording, the viewfinder is the whole point of the
-                // screen, so it sits where the user is already looking rather than tucked into
-                // a corner at thumbnail size.
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularCameraPreview(
-                        cameraRecorderHelper = cameraHelper,
-                        // Matches the record button so the placeholder reads as that button grown.
-                        seedColor = if (currentTheme.name == "Default") MaterialTheme.colorScheme.primary else currentTheme.iconTint
-                    )
-                }
-            }
             if (uiMessages.isEmpty() && isSyncing) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
@@ -969,7 +995,19 @@ fun ChatScreen(
             } else {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    // Animated both ways, so the list eases out of focus as the
+                    // viewfinder appears and eases back as it leaves, rather
+                    // than snapping between sharp and blurred.
+                    .then(
+                        if (recordingBlurRadius > 0.1f) {
+                            Modifier.blur(recordingBlurRadius.dp)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 contentPadding = PaddingValues(16.dp),
                 reverseLayout = true
             ) {
@@ -1024,6 +1062,37 @@ fun ChatScreen(
                     }
                 }
             }
+            }
+
+            // Emitted last, so it draws over the message list.
+            //
+            // It used to be emitted before the list. Siblings in a Box paint in
+            // emission order, so the viewfinder — the whole point of the screen
+            // while recording — was painted over by every bubble above it.
+            if (isRecordingVideo || videoNoteFlight > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularCameraPreview(
+                        cameraRecorderHelper = cameraHelper,
+                        // Matches the record button so the placeholder reads as that button grown.
+                        seedColor = if (currentTheme.name == "Default") MaterialTheme.colorScheme.primary else currentTheme.iconTint,
+                        modifier = Modifier.graphicsLayer {
+                            // On release the circle travels to where the new
+                            // bubble lands rather than blinking out of existence.
+                            // The spring is the one bubbles arrive on, so the two
+                            // motions read as one continuous thing.
+                            val t = videoNoteFlightProgress
+                            translationY = t * flightDistancePx
+                            scaleX = 1f - t * 0.55f
+                            scaleY = 1f - t * 0.55f
+                            alpha = 1f - t * 0.9f
+                        }
+                    )
+                }
             }
         }
     }
@@ -1948,3 +2017,6 @@ private fun BoxScope.MediaSendBadge(
         modifier = Modifier.align(Alignment.TopStart).padding(6.dp)
     )
 }
+
+/** How far out of focus the message list goes while a note is being recorded. */
+private const val RECORDING_BLUR_DP = 14f
