@@ -1,5 +1,7 @@
 package com.neveroff
 
+import com.neveroff.util.toUserMessage
+
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -911,7 +913,9 @@ fun AppNavigation(intent: android.content.Intent?) {
                                 com.neveroff.ui.components.AppToast.success("Аватар обновлен!")
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                com.neveroff.ui.components.AppToast.error("Ошибка загрузки: ${e.message}")
+                                com.neveroff.ui.components.AppToast.error(
+                                    e.toUserMessage(context, R.string.error_upload_failed, "Avatar")
+                                )
                             }
                         }
                     }
@@ -951,7 +955,9 @@ fun AppNavigation(intent: android.content.Intent?) {
                             com.neveroff.ui.components.AppToast.success("Профиль обновлен")
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            com.neveroff.ui.components.AppToast.error("Ошибка сохранения: ${e.message}")
+                            com.neveroff.ui.components.AppToast.error(
+                                e.toUserMessage(context, R.string.error_save_failed, "EditProfile")
+                            )
                         }
                     }
                 },

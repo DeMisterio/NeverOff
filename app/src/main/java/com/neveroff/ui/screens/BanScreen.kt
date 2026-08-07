@@ -1,6 +1,7 @@
 package com.neveroff.ui.screens
 
 import com.neveroff.R
+import com.neveroff.util.toUserMessage
 
 import androidx.compose.ui.res.stringResource
 
@@ -59,6 +60,7 @@ fun BanScreen(
     onOpenSupport: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uriHandler = LocalUriHandler.current
 
     var showAppealForm by remember { mutableStateOf(false) }
@@ -265,8 +267,9 @@ fun BanScreen(
                                             appealState = "pending"
                                             showAppealForm = false
                                         } catch (e: Exception) {
-                                            submitError = e.message
-                                                ?: "Could not submit right now. Try again shortly."
+                                            submitError = e.toUserMessage(
+                                                context, R.string.error_submit_failed, "BanScreen"
+                                            )
                                         } finally {
                                             submitting = false
                                         }

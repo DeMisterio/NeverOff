@@ -360,6 +360,9 @@
     <string name="error_save_failed">Couldn\'t save. Please try again.</string>
     <string name="error_download_failed">Download failed. Please try again.</string>
     <string name="error_submit_failed">Couldn\'t send that. Please try again.</string>
+    <string name="error_invalid_code">That code is wrong or has expired. Check it, or ask for a new one.</string>
+    <string name="error_resend_code">Couldn\'t resend the code. Please try again.</string>
+    <string name="error_subscribe_failed">Couldn\'t subscribe right now — you can find it later in search.</string>
     <string name="changes_saved">Changes saved</string>
     <string name="reactions_need_one">Pick at least one reaction</string>
     <string name="reactions_too_many">Pick no more than %1$d reactions</string>

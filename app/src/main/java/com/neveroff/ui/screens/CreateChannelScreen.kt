@@ -1,6 +1,7 @@
 package com.neveroff.ui.screens
 
 import com.neveroff.R
+import com.neveroff.util.toUserMessage
 
 import androidx.compose.ui.res.stringResource
 
@@ -81,6 +82,7 @@ fun CreateChannelScreen(
     onCreated: (channelId: String) -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var step by rememberSaveable { mutableIntStateOf(0) }
 
@@ -239,7 +241,11 @@ fun CreateChannelScreen(
                                     }
                                     .onFailure { error ->
                                         com.neveroff.ui.components.AppToast.error(
-                                            error.message ?: "Could not create the channel"
+                                            error.toUserMessage(
+                                                context,
+                                                R.string.error_create_channel,
+                                                "CreateChannel"
+                                            )
                                         )
                                     }
                             }

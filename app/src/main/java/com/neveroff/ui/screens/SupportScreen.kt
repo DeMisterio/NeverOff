@@ -1,6 +1,7 @@
 package com.neveroff.ui.screens
 
 import com.neveroff.R
+import com.neveroff.util.toUserMessage
 
 import androidx.compose.ui.res.stringResource
 
@@ -52,6 +53,7 @@ fun SupportScreen(
     initialSubject: String? = null
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uriHandler = LocalUriHandler.current
 
     var stage by remember { mutableStateOf(if (initialCategoryKey != null) Stage.COMPOSE else Stage.LIST) }
@@ -338,8 +340,9 @@ fun SupportScreen(
                                             chosenKey, subject.trim(), body.trim()
                                         )
                                     } catch (e: Exception) {
-                                        error = e.message
-                                            ?: "Could not send that. Please try again."
+                                        error = e.toUserMessage(
+                                            context, R.string.error_submit_failed, "Support"
+                                        )
                                     } finally {
                                         busy = false
                                     }
@@ -425,7 +428,9 @@ fun SupportScreen(
                                     scope.launch {
                                         runCatching { SupportRepository.reply(id, text) }
                                             .onFailure {
-                                                error = it.message
+                                                error = it.toUserMessage(
+                                                    context, R.string.error_submit_failed, "Support"
+                                                )
                                                 reply = text
                                             }
                                         thread = SupportRepository.thread(id)

@@ -3,6 +3,7 @@ package com.neveroff.util
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import com.neveroff.BuildConfig
 import com.neveroff.data.remote.SupabaseClient
@@ -25,6 +26,7 @@ data class ServerVersion(
 )
 
 object UpdateManager {
+    private const val TAG = "UpdateManager"
     val CURRENT_APP_VERSION: String get() = BuildConfig.VERSION_NAME
 
     suspend fun checkForUpdates(): ServerVersion? = withContext(Dispatchers.IO) {
@@ -122,8 +124,9 @@ object UpdateManager {
             connection.connect()
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                Log.w(TAG, "Update download rejected with HTTP ${connection.responseCode}")
                 withContext(Dispatchers.Main) {
-                    onError("HTTP Error: ${connection.responseCode}")
+                    onError("The update could not be downloaded. Please try again.")
                 }
                 return@withContext
             }
@@ -179,9 +182,11 @@ object UpdateManager {
                 onComplete(apkFile)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            // The exception text names the download URL, so it goes to the log
+            // and the user gets the plain version.
+            ErrorReporter.report(TAG, e)
             withContext(Dispatchers.Main) {
-                onError(e.message ?: "Download failed")
+                onError("Download failed. Please try again.")
             }
         }
     }

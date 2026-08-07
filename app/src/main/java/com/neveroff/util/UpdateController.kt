@@ -78,7 +78,9 @@ object UpdateController {
                 },
                 onError = { err ->
                     _progress.value = null
-                    com.neveroff.ui.components.AppToast.error("Download failed: $err")
+                    // `err` is already one of UpdateManager's own sentences — never
+                    // an exception message — so it can be shown as-is.
+                    com.neveroff.ui.components.AppToast.error(err)
                 }
             )
         }

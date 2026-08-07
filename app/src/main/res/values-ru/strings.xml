@@ -356,6 +356,9 @@
     <string name="error_save_failed">Не удалось сохранить. Попробуйте ещё раз.</string>
     <string name="error_download_failed">Не удалось скачать. Попробуйте ещё раз.</string>
     <string name="error_submit_failed">Не удалось отправить. Попробуйте ещё раз.</string>
+    <string name="error_invalid_code">Код неверный или истёк. Проверьте его или запросите новый.</string>
+    <string name="error_resend_code">Не удалось отправить код повторно. Попробуйте ещё раз.</string>
+    <string name="error_subscribe_failed">Сейчас не удалось подписаться — канал можно найти позже через поиск.</string>
     <string name="changes_saved">Изменения сохранены</string>
     <string name="reactions_need_one">Выберите хотя бы одну реакцию</string>
     <string name="reactions_too_many">Выберите не больше %1$d реакций</string>

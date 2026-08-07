@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.neveroff.R
 import com.neveroff.data.remote.SupabaseClient
+import com.neveroff.util.toUserMessage
 import io.github.jan.supabase.gotrue.OtpType
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.OTP
@@ -48,6 +50,7 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
     // Authenticated, which navigates away and would cancel a rememberCoroutineScope()
     // job mid-flight ("the coroutine scope left the composition").
     val authScope = LocalLifecycleOwner.current.lifecycleScope
+    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
     var isResending by remember { mutableStateOf(false) }
@@ -189,23 +192,18 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
                             delay(500)
                             onVerified()
                         } else {
-                            val rawMsg = lastError?.message ?: ""
-                            val userMsg = if (rawMsg.contains("Unable to resolve host", ignoreCase = true) || lastError is UnknownHostException) {
-                                "No internet connection. Please check your Wi-Fi, Mobile Data, or VPN and try again."
-                            } else {
-                                "Error: $rawMsg"
-                            }
-                            com.neveroff.ui.components.AppToast.error(userMsg)
+                            // A verify that fails after every OtpType has been tried is
+                            // overwhelmingly a wrong or expired code, so that is the
+                            // fallback; the classifier still catches "no network" first.
+                            val error = lastError ?: IllegalStateException("verify failed")
+                            com.neveroff.ui.components.AppToast.error(
+                                error.toUserMessage(context, R.string.error_invalid_code, "VerifyOtp")
+                            )
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        val rawMsg = e.message ?: ""
-                        val userMsg = if (rawMsg.contains("Unable to resolve host", ignoreCase = true) || e is UnknownHostException) {
-                            "No internet connection. Please check your Wi-Fi, Mobile Data, or VPN and try again."
-                        } else {
-                            "Error: $rawMsg"
-                        }
-                        com.neveroff.ui.components.AppToast.error(userMsg)
+                        com.neveroff.ui.components.AppToast.error(
+                            e.toUserMessage(context, R.string.error_invalid_code, "VerifyOtp")
+                        )
                     } finally {
                         if (!isSuccess) isLoading = false
                     }
@@ -263,19 +261,17 @@ fun VerifyOtpScreen(email: String, onVerified: () -> Unit) {
                         resendCooldown = LATER_RESEND_COOLDOWN
                         com.neveroff.ui.components.AppToast.show("A new code is on its way to $targetEmail")
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        val rawMsg = e.message ?: ""
-                        val userMsg = when {
-                            rawMsg.contains("Unable to resolve host", ignoreCase = true) || e is UnknownHostException ->
-                                "No internet connection. Please check your Wi-Fi, Mobile Data, or VPN and try again."
-                            // Supabase throttles OTP sends server-side; back off until the next window.
-                            rawMsg.contains("security purposes", ignoreCase = true) || rawMsg.contains("rate limit", ignoreCase = true) -> {
-                                resendCooldown = LATER_RESEND_COOLDOWN
-                                "Too many requests. Please wait a moment before asking for a new code."
-                            }
-                            else -> "Couldn't resend the code: $rawMsg"
+                        // Supabase throttles OTP sends server-side; back off until the
+                        // next window. The wording itself comes from the classifier.
+                        val raw = e.message.orEmpty()
+                        if (raw.contains("security purposes", ignoreCase = true) ||
+                            raw.contains("rate limit", ignoreCase = true)
+                        ) {
+                            resendCooldown = LATER_RESEND_COOLDOWN
                         }
-                        com.neveroff.ui.components.AppToast.error(userMsg)
+                        com.neveroff.ui.components.AppToast.error(
+                            e.toUserMessage(context, R.string.error_resend_code, "VerifyOtp")
+                        )
                     } finally {
                         isResending = false
                     }

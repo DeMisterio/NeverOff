@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import androidx.compose.ui.res.stringResource
 import com.neveroff.R
+import com.neveroff.util.toUserMessage
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -182,7 +183,9 @@ fun ProfileSetupScreen(onComplete: () -> Unit) {
                             }.decodeList<Profile>()
                             
                         if (existing.isNotEmpty()) {
-                            com.neveroff.ui.components.AppToast.error("Этот юзернейм уже занят")
+                            com.neveroff.ui.components.AppToast.error(
+                                context.getString(R.string.error_already_taken)
+                            )
                             isLoading = false
                             return@launch
                         }
@@ -206,8 +209,9 @@ fun ProfileSetupScreen(onComplete: () -> Unit) {
 
                         onComplete()
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        com.neveroff.ui.components.AppToast.error("Ошибка: ${e.message}")
+                        com.neveroff.ui.components.AppToast.error(
+                            e.toUserMessage(context, R.string.error_save_failed, "ProfileSetup")
+                        )
                     } finally {
                         isLoading = false
                     }

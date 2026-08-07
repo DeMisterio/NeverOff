@@ -1,6 +1,7 @@
 package com.neveroff.ui.components
 
 import com.neveroff.R
+import com.neveroff.util.toUserMessage
 
 import androidx.compose.ui.res.stringResource
 
@@ -51,6 +52,7 @@ fun ReportDialog(
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var category by remember { mutableStateOf<ReportRepository.Category?>(null) }
     var reason by remember { mutableStateOf<ReportRepository.Reason?>(null) }
@@ -307,8 +309,9 @@ fun ReportDialog(
                                             contextConsented = false
                                         )
                                     } catch (e: Exception) {
-                                        error = e.message
-                                            ?: "Could not send that report. Please try again."
+                                        error = e.toUserMessage(
+                                            context, R.string.error_submit_failed, "ReportDialog"
+                                        )
                                     } finally {
                                         submitting = false
                                     }
