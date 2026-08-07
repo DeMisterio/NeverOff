@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.neveroff.data.model.MediaEnvelope
+import com.neveroff.media.AudioFocusEffect
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -82,6 +83,22 @@ fun FullScreenMediaViewer(
                     repeatMode = ExoPlayer.REPEAT_MODE_ALL
                 }
             }
+
+            // This one plays out loud, so it holds audio focus for as long as it
+            // is playing and gives it back on pause, on stop, and on leaving the
+            // screen — the last of those by virtue of leaving composition.
+            var isPlaying by remember { mutableStateOf(true) }
+            DisposableEffect(exoPlayer) {
+                val listener = object : androidx.media3.common.Player.Listener {
+                    override fun onIsPlayingChanged(playing: Boolean) {
+                        isPlaying = playing
+                    }
+                }
+                exoPlayer.addListener(listener)
+                onDispose { exoPlayer.removeListener(listener) }
+            }
+            AudioFocusEffect(active = isPlaying) { exoPlayer.pause() }
+
             DisposableEffect(Unit) {
                 onDispose {
                     exoPlayer.release()

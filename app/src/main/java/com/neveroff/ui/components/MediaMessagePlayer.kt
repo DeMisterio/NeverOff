@@ -36,6 +36,7 @@ import io.github.jan.supabase.gotrue.auth
 
 import coil.compose.AsyncImage
 import com.neveroff.crypto.CryptoManager
+import com.neveroff.media.AudioFocusEffect
 import com.neveroff.data.model.MediaEnvelope
 import com.neveroff.data.model.MediaKind
 import com.neveroff.data.remote.SupabaseClient
@@ -80,6 +81,13 @@ fun MediaMessagePlayer(
             // tapping a round note still unmutes it in place.
             if (isVideo || isFileVideo) volume = 0f
         }
+    }
+
+    // A voice note is audible the moment it plays, so focus follows isPlaying.
+    // Video previews are muted and deliberately absent from this condition.
+    AudioFocusEffect(active = isVoice && isPlaying) {
+        exoPlayer.pause()
+        isPlaying = false
     }
 
     LaunchedEffect(messageText, retryTrigger) {
@@ -250,6 +258,12 @@ fun MediaMessagePlayer(
 
         if (isVideo) {
             // Round video note: the perimeter doubles as its timeline.
+            // It starts muted and only takes audio focus once tapped.
+            var noteUnmuted by remember { mutableStateOf(false) }
+            AudioFocusEffect(active = noteUnmuted) {
+                noteUnmuted = false
+                exoPlayer.volume = 0f
+            }
             var positionMs by remember { mutableStateOf(0L) }
             var durationMs by remember { mutableStateOf(0L) }
             var isScrubbing by remember { mutableStateOf(false) }
@@ -282,7 +296,8 @@ fun MediaMessagePlayer(
                         .clip(shape)
                         .background(Color.Black)
                         .clickable {
-                            if (exoPlayer.volume == 0f) exoPlayer.volume = 1f else exoPlayer.volume = 0f
+                            noteUnmuted = !noteUnmuted
+                            exoPlayer.volume = if (noteUnmuted) 1f else 0f
                         }
                 ) { surface() }
             }
