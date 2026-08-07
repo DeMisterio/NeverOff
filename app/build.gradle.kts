@@ -31,8 +31,16 @@ android {
         // resend, shows console warnings, and puts @support in search. The
         // leading zero is read as a fraction by compareVersions, so it sorts
         // above 3.0 and below a future 3.1.
-        versionCode = 15
-        versionName = "3.2"
+        //
+        // 3.4 is the tester bug-fix pass: reactions save again, media stops
+        // reporting delivered messages as failed, video sent as a file arrives
+        // as video, and the reaction picker reaches its whole list. Adds
+        // changeable usernames and custom chat colours.
+        //
+        // Both of those last two need migrations 09 and 10 applied first — the
+        // usernames screen reads a table that does not exist without them.
+        versionCode = 16
+        versionName = "3.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
