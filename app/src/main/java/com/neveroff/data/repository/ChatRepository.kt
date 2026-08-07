@@ -33,6 +33,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 import io.github.jan.supabase.gotrue.auth
 import com.neveroff.BuildConfig
+import com.neveroff.util.ErrorReporter
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -47,6 +48,25 @@ class ChatRepository(
     private val scope = CoroutineScope(Dispatchers.IO)
     private var realtimeChannel: RealtimeChannel? = null
     private var subscriptionJob: Job? = null
+
+    private companion object {
+        const val TAG = "ChatRepository"
+
+        /** Attempts at the message row before we go and check whether it landed anyway. */
+        const val SEND_ATTEMPTS = 2
+
+        /** Attempts at the media blob. Safe to repeat: the object name is the message id. */
+        const val UPLOAD_ATTEMPTS = 2
+
+        const val UPLOAD_CONNECT_TIMEOUT_MS = 30_000
+
+        /**
+         * Generous, because this covers the server's reply after the last byte of
+         * a large file — but finite, because the old default was "wait forever",
+         * and a bubble stuck at 99% never resolves either way.
+         */
+        const val UPLOAD_READ_TIMEOUT_MS = 60_000
+    }
 
     /** Observe messages from local database (Single Source of Truth) */
     fun observeMessages(chatId: String): Flow<List<MessageEntity>> {
@@ -400,7 +420,14 @@ class ChatRepository(
 
 
     
-    /** Send media message: Encrypt file, upload, then send normal text message with metadata */
+    /**
+     * Send media message: Encrypt file, upload, then send normal text message with metadata.
+     *
+     * Every id here is derived from [newMessageId], which is minted before any
+     * network call. That is what makes the whole operation replayable: the
+     * storage object and the message row both land on the same names no matter
+     * how many times this runs, so a retry overwrites rather than duplicates.
+     */
     suspend fun sendMediaMessage(chatId: String, prefix: String, file: java.io.File, onProgress: ((String, Float) -> Unit)? = null): Pair<Boolean, String?> {
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             var newMessageId: String? = null
@@ -408,10 +435,16 @@ class ChatRepository(
                 // 1. Encrypt file locally
                 val encryptedFile = java.io.File(file.parent, "${file.name}.enc")
                 val fileKeyBase64 = com.neveroff.crypto.CryptoManager.encryptFile(file, encryptedFile)
-                
+
                 // 2. Prepare message text and insert to Room optimistically
-                val remoteName = "${java.util.UUID.randomUUID()}_${file.name}.enc"
-                
+                //
+                // The object name is the message id, not a fresh UUID. A random
+                // name per attempt meant a re-upload wrote a second copy under a
+                // second name and orphaned the first, so the operation could not
+                // safely be repeated.
+                newMessageId = java.util.UUID.randomUUID().toString()
+                val remoteName = "$newMessageId.enc"
+
                 // Cache the file locally so MediaMessagePlayer can find it instantly
                 val ext = when {
                     prefix == "VOICE" -> "m4a"
@@ -430,8 +463,7 @@ class ChatRepository(
                 file.copyTo(cachedFile, overwrite = true)
                 
                 val text = "[$prefix] $remoteName $fileKeyBase64"
-                newMessageId = java.util.UUID.randomUUID().toString()
-                
+
                 val entity = com.neveroff.data.local.MessageEntity(
                     id = newMessageId,
                     chatId = chatId,
@@ -447,21 +479,77 @@ class ChatRepository(
                     return@withContext Pair(true, newMessageId) // Local only!
                 }
 
-                // 3. Upload to Supabase using Ktor for progress tracking
-                val url = "${BuildConfig.SUPABASE_URL}/storage/v1/object/chat_media/$remoteName"
-                
-                val urlObj = java.net.URL(url)
-                val connection = urlObj.openConnection() as java.net.HttpURLConnection
-                connection.requestMethod = "POST"
-                connection.doOutput = true
-                connection.setRequestProperty("Authorization", "Bearer ${com.neveroff.data.remote.SupabaseClient.client.auth.currentAccessTokenOrNull() ?: ""}")
-                connection.setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
-                connection.setRequestProperty("Content-Type", "application/octet-stream")
-                
-                val fileLength = encryptedFile.length()
-                connection.setFixedLengthStreamingMode(fileLength)
-                connection.connect()
-                
+                // 3. Upload the ciphertext, retrying transient failures.
+                val uploaded = uploadEncryptedMedia(remoteName, encryptedFile, newMessageId, onProgress)
+
+                // Cleanup temp files
+                encryptedFile.delete()
+                file.delete()
+
+                if (!uploaded) {
+                    db.messageDao().updateMessageStatus(newMessageId, -1)
+                    return@withContext Pair(false, newMessageId)
+                }
+
+                // 4. Send message metadata to Supabase, through the same
+                // retry-and-verify path the text send uses. This used to be a
+                // bare upsert: one transient blip after a successful upload and
+                // the message was marked failed despite being delivered.
+                val (ciphertext, msgKey) = com.neveroff.crypto.CryptoManager.encryptMessage(text, authKey)
+                val sent = sendMessageToRemoteWithRetry(newMessageId, chatId, ciphertext, msgKey)
+                Pair(sent, newMessageId)
+            } catch (e: Exception) {
+                com.neveroff.util.ErrorReporter.report("ChatRepository.sendMedia", e)
+                // Cleanup temp files if they exist
+                java.io.File(file.parent, "${file.name}.enc").delete()
+                file.delete()
+                // Mark the optimistic local row as failed instead of leaving it ambiguously "pending".
+                newMessageId?.let { db.messageDao().updateMessageStatus(it, -1) }
+                Pair(false, newMessageId)
+            }
+        }
+    }
+
+    /**
+     * PUTs the encrypted blob to storage under [remoteName], reporting progress.
+     *
+     * Retries once, which it can only do safely because [remoteName] is derived
+     * from the message id: the second attempt targets the same object, and
+     * `x-upsert` lets it replace a partial first attempt instead of failing with
+     * a 409 the way a plain POST would.
+     *
+     * Timeouts are explicit. Without them a stalled socket blocks here forever,
+     * which is the state a "still sending" bubble never recovers from.
+     */
+    private suspend fun uploadEncryptedMedia(
+        remoteName: String,
+        encryptedFile: java.io.File,
+        messageId: String,
+        onProgress: ((String, Float) -> Unit)?
+    ): Boolean {
+        val url = "${BuildConfig.SUPABASE_URL}/storage/v1/object/chat_media/$remoteName"
+        val fileLength = encryptedFile.length()
+
+        repeat(UPLOAD_ATTEMPTS) { attempt ->
+            var connection: java.net.HttpURLConnection? = null
+            try {
+                connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    connectTimeout = UPLOAD_CONNECT_TIMEOUT_MS
+                    readTimeout = UPLOAD_READ_TIMEOUT_MS
+                    setRequestProperty(
+                        "Authorization",
+                        "Bearer ${com.neveroff.data.remote.SupabaseClient.client.auth.currentAccessTokenOrNull() ?: ""}"
+                    )
+                    setRequestProperty("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+                    setRequestProperty("Content-Type", "application/octet-stream")
+                    // Replay-safe: a retry overwrites its own half-written object.
+                    setRequestProperty("x-upsert", "true")
+                    setFixedLengthStreamingMode(fileLength)
+                    connect()
+                }
+
                 encryptedFile.inputStream().use { input ->
                     connection.outputStream.use { output ->
                         val buffer = ByteArray(8 * 1024)
@@ -471,57 +559,35 @@ class ChatRepository(
                             output.write(buffer, 0, bytes)
                             bytesCopied += bytes
                             if (fileLength > 0) {
-                                onProgress?.invoke(newMessageId, bytesCopied.toFloat() / fileLength.toFloat())
+                                onProgress?.invoke(messageId, bytesCopied.toFloat() / fileLength.toFloat())
                             }
                             bytes = input.read(buffer)
                         }
                     }
                 }
-                
+
                 val responseCode = connection.responseCode
-                connection.disconnect()
-                if (responseCode !in 200..299) {
-                    throw Exception("Upload failed with code $responseCode")
-                }
-                
-                // Cleanup temp files
-                encryptedFile.delete()
-                file.delete()
-                
-                // 4. Send message metadata to Supabase
-                // Extract logic from sendMessage
-                val (ciphertext, msgKey) = com.neveroff.crypto.CryptoManager.encryptMessage(text, authKey)
-                val message = com.neveroff.ui.screens.Message(
-                    id = newMessageId,
-                    chat_id = chatId,
-                    sender_id = myId,
-                    ciphertext = ciphertext,
-                    msg_key = msgKey,
-                    status = "sent"
-                )
-                com.neveroff.data.remote.SupabaseClient.client.postgrest["messages"].upsert(message)
-                
-                // CALL PUSH NOTIFY
-                triggerPushNotification(com.neveroff.ui.screens.Message(
-                    id = newMessageId,
-                    chat_id = chatId,
-                    sender_id = myId,
-                    ciphertext = ciphertext,
-                    msg_key = msgKey,
-                    status = "sent"
-                ))
-                
-                Pair(true, newMessageId)
+                if (responseCode in 200..299) return true
+
+                // 4xx other than 409 means this request will never succeed —
+                // wrong bucket, expired token, file too large. Retrying just
+                // makes the user wait longer for the same answer.
+                Log.w(TAG, "Media upload attempt ${attempt + 1} got HTTP $responseCode")
+                if (responseCode in 400..499 && responseCode != 409) return false
             } catch (e: Exception) {
-                e.printStackTrace()
-                // Cleanup temp files if they exist
-                java.io.File(file.parent, "${file.name}.enc").delete()
-                file.delete()
-                // Mark the optimistic local row as failed instead of leaving it ambiguously "pending".
-                newMessageId?.let { db.messageDao().updateMessageStatus(it, -1) }
-                Pair(false, newMessageId)
+                com.neveroff.util.ErrorReporter.report(TAG, e)
+            } finally {
+                connection?.disconnect()
+            }
+
+            if (attempt < UPLOAD_ATTEMPTS - 1) {
+                // Rewind the visible progress so the retry does not look stuck
+                // at the point the first attempt died.
+                onProgress?.invoke(messageId, 0f)
+                delay(1000)
             }
         }
+        return false
     }
 
     /** Send message: First save pending to DB, then upload */
@@ -565,6 +631,12 @@ class ChatRepository(
      * Upserts the message row to Supabase — idempotent, so a retry that reuses the same
      * [messageId] can never create a duplicate row. Retries once on failure; on final
      * failure marks the local row as failed (-1) instead of leaving it ambiguously "pending".
+     *
+     * "Failure" means the row is not there, not that a request threw. Because the
+     * upsert is idempotent, a timeout or a dropped connection says nothing about
+     * whether the write landed — the row can be on the server, already fanned out
+     * to the recipient over realtime, while this client saw only an exception. So
+     * before marking anything failed we go and look.
      */
     private suspend fun sendMessageToRemoteWithRetry(messageId: String, chatId: String, ciphertext: String, msgKey: String): Boolean {
         val message = Message(
@@ -576,19 +648,47 @@ class ChatRepository(
             status = "sent"
         )
         var lastError: Exception? = null
-        repeat(2) { attempt ->
+        repeat(SEND_ATTEMPTS) { attempt ->
             try {
                 SupabaseClient.client.postgrest["messages"].upsert(message)
                 triggerPushNotification(message)
                 return true
             } catch (e: Exception) {
                 lastError = e
-                if (attempt == 0) delay(1000)
+                if (attempt < SEND_ATTEMPTS - 1) delay(1000)
             }
         }
-        lastError?.printStackTrace()
+        lastError?.let { ErrorReporter.report(TAG, it) }
+
+        if (messageExistsRemotely(messageId)) {
+            // Delivered; only the acknowledgement went missing. Reporting this as
+            // a failure is what put a red warning on messages the recipient was
+            // already reading.
+            Log.i(TAG, "Send reported an error but the row is on the server; treating as sent")
+            triggerPushNotification(message)
+            return true
+        }
+
         db.messageDao().updateMessageStatus(messageId, -1)
         return false
+    }
+
+    /**
+     * Whether [messageId] made it to the server.
+     *
+     * Returns false when the check itself fails: not knowing is not the same as
+     * knowing it arrived, and claiming success on a message that is not there
+     * would lose it silently. The local row stays failed and retryable, which is
+     * the recoverable direction to be wrong in.
+     */
+    private suspend fun messageExistsRemotely(messageId: String): Boolean = try {
+        SupabaseClient.client.postgrest["messages"]
+            .select { filter { eq("id", messageId) } }
+            .decodeList<Message>()
+            .isNotEmpty()
+    } catch (e: Exception) {
+        ErrorReporter.report(TAG, e)
+        false
     }
 
     /**
