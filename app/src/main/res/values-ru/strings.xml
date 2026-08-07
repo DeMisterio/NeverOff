@@ -362,4 +362,19 @@
     <string name="changes_saved">Изменения сохранены</string>
     <string name="reactions_need_one">Выберите хотя бы одну реакцию</string>
     <string name="reactions_too_many">Выберите не больше %1$d реакций</string>
+    <string name="usernames_title">Юзернеймы</string>
+    <string name="usernames_explain">На аккаунт можно привязать до %1$d юзернеймов. Работает любой из них; основной показывается в профиле.</string>
+    <string name="usernames_add">Добавить юзернейм</string>
+    <string name="usernames_claim">Занять юзернейм</string>
+    <string name="usernames_format">3–32 символа. Только буквы, цифры и _.</string>
+    <string name="usernames_taken">Этот юзернейм уже занят.</string>
+    <string name="usernames_available">Юзернейм свободен.</string>
+    <string name="usernames_at_limit">У вас уже %1$d юзернеймов. Удалите один, чтобы добавить новый.</string>
+    <string name="usernames_permanent_note">Удалённый юзернейм остаётся закреплённым за вами. Занять его никто не сможет, поэтому сообщения для вас не попадут к постороннему.</string>
+    <string name="username_primary_label">Показывается в профиле</string>
+    <string name="username_make_primary">Сделать основным</string>
+    <string name="username_remove">Удалить юзернейм</string>
+    <string name="username_added">Юзернейм занят</string>
+    <string name="username_removed">Юзернейм удалён и остаётся закреплённым за вами.</string>
+    <string name="username_primary_cannot_remove">Сначала сделайте основным другой юзернейм.</string>
 </resources>

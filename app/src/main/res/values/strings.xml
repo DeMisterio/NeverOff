@@ -366,4 +366,19 @@
     <string name="changes_saved">Changes saved</string>
     <string name="reactions_need_one">Pick at least one reaction</string>
     <string name="reactions_too_many">Pick no more than %1$d reactions</string>
+    <string name="usernames_title">Usernames</string>
+    <string name="usernames_explain">Up to %1$d usernames can point at your account. Any of them reaches you; the primary one is shown on your profile.</string>
+    <string name="usernames_add">Add a username</string>
+    <string name="usernames_claim">Claim username</string>
+    <string name="usernames_format">3–32 characters. Letters, numbers and _ only.</string>
+    <string name="usernames_taken">That username is taken.</string>
+    <string name="usernames_available">That username is free.</string>
+    <string name="usernames_at_limit">You already have %1$d usernames. Remove one to add another.</string>
+    <string name="usernames_permanent_note">A username you remove stays reserved to you. Nobody else can claim it, so messages meant for you can never reach a stranger.</string>
+    <string name="username_primary_label">Shown on your profile</string>
+    <string name="username_make_primary">Make primary</string>
+    <string name="username_remove">Remove username</string>
+    <string name="username_added">Username claimed</string>
+    <string name="username_removed">Username removed. It stays reserved to you.</string>
+    <string name="username_primary_cannot_remove">Make another username primary first.</string>
 </resources>

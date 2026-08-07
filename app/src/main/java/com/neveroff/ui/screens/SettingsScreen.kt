@@ -64,7 +64,8 @@ fun SettingsScreen(
     currentProfile: Profile?,
     onBack: () -> Unit,
     onProfileUpdated: (Profile) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onOpenUsernames: () -> Unit = {}
 ) {
     var activeCategory by remember { mutableStateOf(SettingsCategory.MAIN) }
     var showEditProfile by remember { mutableStateOf(false) }
@@ -110,6 +111,7 @@ fun SettingsScreen(
         ) {
             when (activeCategory) {
                 SettingsCategory.MAIN -> MainSettingsCategory(
+                    onOpenUsernames = onOpenUsernames,
                     profile = currentProfile,
                     onOpenCategory = { activeCategory = it },
                     onEditProfile = { showEditProfile = true },
@@ -168,7 +170,8 @@ private fun MainSettingsCategory(
     profile: Profile?,
     onOpenCategory: (SettingsCategory) -> Unit,
     onEditProfile: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onOpenUsernames: () -> Unit = {}
 ) {
     val context = LocalContext.current
     LazyColumn(
@@ -270,6 +273,16 @@ private fun MainSettingsCategory(
         }
 
         // Navigation Items
+        item {
+            SettingsNavigationRow(
+                icon = Icons.Default.AccountCircle,
+                title = stringResource(R.string.usernames_title),
+                subtitle = profile?.username?.let { "@$it" }
+                    ?: stringResource(R.string.usernames_add),
+                onClick = onOpenUsernames
+            )
+        }
+
         item {
             SettingsNavigationRow(
                 icon = Icons.Default.Settings,

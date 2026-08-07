@@ -967,10 +967,24 @@ fun AppNavigation(intent: android.content.Intent?) {
                 }
             )
         }
+        composable("usernames") {
+            val myId = myProfile?.id
+            if (myId == null) {
+                navController.popBackStack()
+            } else {
+                com.neveroff.ui.screens.UsernamesScreen(
+                    repository = remember(myId) {
+                        com.neveroff.data.repository.UsernameRepository(myId)
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
         composable("settings") {
             SettingsScreen(
                 currentProfile = myProfile,
                 onBack = { navController.popBackStack() },
+                onOpenUsernames = { navController.navigate("usernames") },
                 onProfileUpdated = { updated ->
                     myProfile = updated
                     val prefs = context.getSharedPreferences("neveroff_prefs", android.content.Context.MODE_PRIVATE)
