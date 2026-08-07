@@ -381,4 +381,22 @@
     <string name="username_added">Username claimed</string>
     <string name="username_removed">Username removed. It stays reserved to you.</string>
     <string name="username_primary_cannot_remove">Make another username primary first.</string>
+    <string name="appearance_accent">Accent colour</string>
+    <string name="appearance_accent_explain">Your bubbles take this colour, and the rest of the chat palette is generated from it.</string>
+    <string name="appearance_use_accent">Generate palette from accent</string>
+    <string name="appearance_use_accent_explain">Turn off to set your bubbles and theirs separately.</string>
+    <string name="appearance_my_bubble">Your messages</string>
+    <string name="appearance_their_bubble">Their messages</string>
+    <string name="appearance_wallpaper">Chat wallpaper</string>
+    <string name="appearance_wallpaper_theme">From theme</string>
+    <string name="appearance_wallpaper_solid">Solid</string>
+    <string name="appearance_wallpaper_gradient">Gradient</string>
+    <string name="appearance_wallpaper_image">My image</string>
+    <string name="appearance_wallpaper_chosen">Using your own image.</string>
+    <string name="appearance_dim">Dim: %1$d%%</string>
+    <string name="appearance_blur">Blur: %1$d%%</string>
+    <string name="appearance_reset">Reset to default theme</string>
+    <string name="appearance_reset_done">Theme reset</string>
+    <string name="appearance_contrast_ok">Text contrast %1$s:1 - readable.</string>
+    <string name="appearance_contrast_adjusted">Adjusted for readability. Text contrast %1$s:1.</string>
 </resources>

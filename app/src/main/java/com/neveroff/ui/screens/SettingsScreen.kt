@@ -5,7 +5,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -423,6 +425,30 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
     val chatTheme by SettingsManager.chatThemeFlow.collectAsState()
     val wallpaperBrightness by SettingsManager.wallpaperBrightnessFlow.collectAsState()
     val applyToAlreadyChanged by SettingsManager.applyThemeToAlreadyChangedFlow.collectAsState()
+    val accentColor by SettingsManager.accentColorFlow.collectAsState()
+    val useAccentPalette by SettingsManager.useAccentPaletteFlow.collectAsState()
+    val wallpaperMode by SettingsManager.wallpaperModeFlow.collectAsState()
+    val wallpaperColor by SettingsManager.wallpaperColorFlow.collectAsState()
+    val wallpaperImageUri by SettingsManager.wallpaperImageUriFlow.collectAsState()
+    val wallpaperBlur by SettingsManager.wallpaperBlurFlow.collectAsState()
+    val isDarkNow = androidx.compose.foundation.isSystemInDarkTheme()
+
+    val wallpaperPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            // Persist read access, or the wallpaper is a broken image after the
+            // next restart: the implicit grant dies with the process.
+            runCatching {
+                settingsContext.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            SettingsManager.setWallpaperImageUri(uri.toString())
+            SettingsManager.setWallpaperMode("image")
+        }
+    }
     val bounciness by SettingsManager.bouncinessFlow.collectAsState()
     val stretchiness by SettingsManager.stretchinessFlow.collectAsState()
     val allAnimations by SettingsManager.allAnimationsFlow.collectAsState()
@@ -490,6 +516,166 @@ private fun AppearanceCategoryScreen(onOpenAnimations: () -> Unit) {
                 stretchiness = stretchiness,
                 allAnimations = allAnimations
             )
+        }
+
+        // Accent colour, and the palette derived from it.
+        item {
+            SettingsCard {
+                Text(
+                    stringResource(R.string.appearance_accent),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    stringResource(R.string.appearance_accent_explain),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                ColorSwatchRow(
+                    options = ACCENT_OPTIONS,
+                    selected = accentColor,
+                    onSelect = { SettingsManager.setAccentColor(it) }
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.appearance_use_accent),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            stringResource(R.string.appearance_use_accent_explain),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = useAccentPalette,
+                        onCheckedChange = { SettingsManager.setUseAccentPalette(it) }
+                    )
+                }
+
+                if (!useAccentPalette) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.appearance_my_bubble),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    ColorSwatchRow(
+                        options = ACCENT_OPTIONS,
+                        selected = myBubbleColor,
+                        onSelect = { SettingsManager.setMyBubbleColor(it) }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.appearance_their_bubble),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    ColorSwatchRow(
+                        options = ACCENT_OPTIONS,
+                        selected = otherBubbleColor,
+                        onSelect = { SettingsManager.setOtherBubbleColor(it) }
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+                ContrastNote(
+                    accent = accentColor,
+                    useAccentPalette = useAccentPalette,
+                    myBubbleColor = myBubbleColor,
+                    darkTheme = isDarkNow
+                )
+            }
+        }
+
+        // Wallpaper.
+        item {
+            SettingsCard {
+                Text(
+                    stringResource(R.string.appearance_wallpaper),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    WALLPAPER_MODES.forEach { mode ->
+                        FilterChip(
+                            selected = wallpaperMode == mode.key,
+                            onClick = {
+                                if (mode.key == "image") {
+                                    wallpaperPicker.launch(
+                                        androidx.activity.result.PickVisualMediaRequest(
+                                            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
+                                    )
+                                } else {
+                                    SettingsManager.setWallpaperMode(mode.key)
+                                }
+                            },
+                            label = { Text(stringResource(mode.labelRes)) }
+                        )
+                    }
+                }
+
+                if (wallpaperMode == "solid" || wallpaperMode == "gradient") {
+                    Spacer(Modifier.height(10.dp))
+                    ColorSwatchRow(
+                        options = ACCENT_OPTIONS,
+                        selected = wallpaperColor,
+                        onSelect = { SettingsManager.setWallpaperColor(it) }
+                    )
+                }
+
+                if (wallpaperMode == "image" && wallpaperImageUri != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.appearance_wallpaper_chosen),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    stringResource(R.string.appearance_dim, (100 - wallpaperBrightness * 100).toInt()),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = wallpaperBrightness,
+                    onValueChange = { SettingsManager.setWallpaperBrightness(it) },
+                    valueRange = 0.2f..1f
+                )
+
+                Text(
+                    stringResource(R.string.appearance_blur, (wallpaperBlur * 100).toInt()),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = wallpaperBlur,
+                    onValueChange = { SettingsManager.setWallpaperBlur(it) },
+                    valueRange = 0f..1f
+                )
+            }
+        }
+
+        // Reset.
+        item {
+            OutlinedButton(
+                onClick = {
+                    SettingsManager.resetAppearance()
+                    com.neveroff.ui.components.AppToast.success(
+                        settingsContext.getString(R.string.appearance_reset_done)
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.appearance_reset))
+            }
         }
 
         // Text Size
@@ -1131,6 +1317,100 @@ private fun UpdatesSettingsSection() {
             version = available!!.version,
             description = available!!.description,
             onDismiss = { showWhatsNew = false }
+        )
+    }
+}
+
+/** Wallpaper sources offered on the appearance screen. */
+private data class WallpaperMode(val key: String, val labelRes: Int)
+
+private val WALLPAPER_MODES = listOf(
+    WallpaperMode("theme", R.string.appearance_wallpaper_theme),
+    WallpaperMode("solid", R.string.appearance_wallpaper_solid),
+    WallpaperMode("gradient", R.string.appearance_wallpaper_gradient),
+    WallpaperMode("image", R.string.appearance_wallpaper_image)
+)
+
+/** Shared palette for accent, bubble and wallpaper pickers. */
+private val ACCENT_OPTIONS = listOf(
+    0xFF7C4DFFL, 0xFF9C27B0L, 0xFF1976D2L, 0xFF00ACC1L,
+    0xFF388E3CL, 0xFFF57C00L, 0xFFD32F2FL, 0xFF546E7AL,
+    0xFF121212L, 0xFFECEFF1L
+)
+
+@Composable
+private fun ColorSwatchRow(
+    options: List<Long>,
+    selected: Long,
+    onSelect: (Long) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        options.forEach { value ->
+            val color = Color(value)
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .then(
+                        if (value == selected) {
+                            Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        } else {
+                            // A hairline so near-background swatches stay visible.
+                            Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                        }
+                    )
+                    .clickable { onSelect(value) }
+            )
+        }
+    }
+}
+
+/**
+ * Reports the contrast the current choice actually achieves.
+ *
+ * Text colour is computed from the bubble rather than stored, so it can never
+ * be saved unreadable — but a user who picks a colour we then have to correct
+ * deserves to be told, rather than wondering why their pale yellow came out
+ * darker than the swatch.
+ */
+@Composable
+private fun ContrastNote(
+    accent: Long,
+    useAccentPalette: Boolean,
+    myBubbleColor: Long,
+    darkTheme: Boolean
+) {
+    val chosen = Color(if (useAccentPalette) accent else myBubbleColor)
+    val corrected = com.neveroff.ui.theme.ChatAppearance.ensureReadable(chosen)
+    val textColor = com.neveroff.ui.theme.ChatAppearance.textColorOn(corrected)
+    val ratio = com.neveroff.ui.theme.ChatAppearance.contrastRatio(corrected, textColor)
+    val wasAdjusted = corrected != chosen
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(corrected),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Aa", color = textColor, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = if (wasAdjusted) {
+                stringResource(R.string.appearance_contrast_adjusted, String.format("%.1f", ratio))
+            } else {
+                stringResource(R.string.appearance_contrast_ok, String.format("%.1f", ratio))
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

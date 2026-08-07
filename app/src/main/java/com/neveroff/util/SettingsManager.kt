@@ -31,6 +31,11 @@ object SettingsManager {
     private const val PREFS_NAME = "neveroff_settings"
     private lateinit var prefs: SharedPreferences
 
+    const val DEFAULT_ACCENT = 0xFF7C4DFFL
+    const val DEFAULT_MY_BUBBLE = 0xFF3F51B5L
+    const val DEFAULT_OTHER_BUBBLE = 0xFF009688L
+    const val DEFAULT_WALLPAPER_COLOR = 0xFF121212L
+
     private val _themeFlow = MutableStateFlow(ThemePreference.SYSTEM)
     val themeFlow: StateFlow<ThemePreference> = _themeFlow
 
@@ -99,6 +104,82 @@ object SettingsManager {
     private val _visibilityOnlineFlow = MutableStateFlow("Everyone")
     val visibilityOnlineFlow: StateFlow<String> = _visibilityOnlineFlow
 
+
+    // ---- Custom chat appearance -------------------------------------------
+    // The accent is the single colour a palette is generated from. Per-bubble
+    // overrides sit on top of it, so someone who wants exact control still has
+    // it without everyone else having to pick three colours.
+
+    private val _accentColorFlow = MutableStateFlow(DEFAULT_ACCENT)
+    val accentColorFlow: StateFlow<Long> = _accentColorFlow
+
+    /** False means the bubble colours below are used verbatim. */
+    private val _useAccentPaletteFlow = MutableStateFlow(true)
+    val useAccentPaletteFlow: StateFlow<Boolean> = _useAccentPaletteFlow
+
+    /** "theme" | "solid" | "gradient" | "image" */
+    private val _wallpaperModeFlow = MutableStateFlow("theme")
+    val wallpaperModeFlow: StateFlow<String> = _wallpaperModeFlow
+
+    private val _wallpaperColorFlow = MutableStateFlow(DEFAULT_WALLPAPER_COLOR)
+    val wallpaperColorFlow: StateFlow<Long> = _wallpaperColorFlow
+
+    private val _wallpaperImageUriFlow = MutableStateFlow<String?>(null)
+    val wallpaperImageUriFlow: StateFlow<String?> = _wallpaperImageUriFlow
+
+    /** 0f = sharp, 1f = fully blurred. Applied to whatever the wallpaper is. */
+    private val _wallpaperBlurFlow = MutableStateFlow(0f)
+    val wallpaperBlurFlow: StateFlow<Float> = _wallpaperBlurFlow
+
+    fun setAccentColor(color: Long) {
+        _accentColorFlow.value = color
+        prefs.edit().putLong("accent_color", color).apply()
+    }
+
+    fun setUseAccentPalette(enabled: Boolean) {
+        _useAccentPaletteFlow.value = enabled
+        prefs.edit().putBoolean("use_accent_palette", enabled).apply()
+    }
+
+    fun setWallpaperMode(mode: String) {
+        _wallpaperModeFlow.value = mode
+        prefs.edit().putString("wallpaper_mode", mode).apply()
+    }
+
+    fun setWallpaperColor(color: Long) {
+        _wallpaperColorFlow.value = color
+        prefs.edit().putLong("wallpaper_color", color).apply()
+    }
+
+    fun setWallpaperImageUri(uri: String?) {
+        _wallpaperImageUriFlow.value = uri
+        prefs.edit().putString("wallpaper_image_uri", uri).apply()
+    }
+
+    fun setWallpaperBlur(value: Float) {
+        _wallpaperBlurFlow.value = value
+        prefs.edit().putFloat("wallpaper_blur", value).apply()
+    }
+
+    /**
+     * Puts every appearance setting back to its shipped value.
+     *
+     * Only the appearance keys — language, privacy and animation settings are
+     * not what someone means by "reset the theme".
+     */
+    fun resetAppearance() {
+        setAccentColor(DEFAULT_ACCENT)
+        setUseAccentPalette(true)
+        setMyBubbleColor(DEFAULT_MY_BUBBLE)
+        setOtherBubbleColor(DEFAULT_OTHER_BUBBLE)
+        setWallpaperMode("theme")
+        setWallpaperColor(DEFAULT_WALLPAPER_COLOR)
+        setWallpaperImageUri(null)
+        setWallpaperBlur(0f)
+        setWallpaperBrightness(1.0f)
+        setChatTheme("Default")
+    }
+
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -131,6 +212,12 @@ object SettingsManager {
         _optimiseOptimisationFlow.value = prefs.getBoolean("optimise_optimisation", false)
         _autoDownloadUpdatesFlow.value = prefs.getBoolean("auto_download_updates", false)
         _wallpaperBrightnessFlow.value = prefs.getFloat("wallpaper_brightness", 1.0f)
+        _accentColorFlow.value = prefs.getLong("accent_color", DEFAULT_ACCENT)
+        _useAccentPaletteFlow.value = prefs.getBoolean("use_accent_palette", true)
+        _wallpaperModeFlow.value = prefs.getString("wallpaper_mode", "theme") ?: "theme"
+        _wallpaperColorFlow.value = prefs.getLong("wallpaper_color", DEFAULT_WALLPAPER_COLOR)
+        _wallpaperImageUriFlow.value = prefs.getString("wallpaper_image_uri", null)
+        _wallpaperBlurFlow.value = prefs.getFloat("wallpaper_blur", 0f)
         _applyThemeToAlreadyChangedFlow.value = prefs.getBoolean("apply_to_already_changed", false)
 
         _autoDeleteDaysFlow.value = prefs.getInt("auto_delete_days", 0)

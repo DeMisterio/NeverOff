@@ -47,6 +47,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.neveroff.R
 import com.neveroff.data.model.MediaKind
+import com.neveroff.ui.theme.Hsl
+import com.neveroff.ui.theme.toColor
+import com.neveroff.ui.theme.toHsl
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -297,7 +301,38 @@ fun ChatScreen(
     val stretchinessEnabled by SettingsManager.stretchinessFlow.collectAsState()
     val allAnimationsEnabled by SettingsManager.allAnimationsFlow.collectAsState()
     
-    val currentTheme = AvailableChatThemes.find { it.name == chatTheme } ?: AvailableChatThemes.first()
+    val accentColor by SettingsManager.accentColorFlow.collectAsState()
+    val useAccentPalette by SettingsManager.useAccentPaletteFlow.collectAsState()
+    val customMyBubble by SettingsManager.myBubbleColorFlow.collectAsState()
+    val customOtherBubble by SettingsManager.otherBubbleColorFlow.collectAsState()
+    val wallpaperMode by SettingsManager.wallpaperModeFlow.collectAsState()
+    val wallpaperColor by SettingsManager.wallpaperColorFlow.collectAsState()
+    val wallpaperImageUri by SettingsManager.wallpaperImageUriFlow.collectAsState()
+    val wallpaperBlur by SettingsManager.wallpaperBlurFlow.collectAsState()
+    val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    val baseTheme = AvailableChatThemes.find { it.name == chatTheme } ?: AvailableChatThemes.first()
+
+    // The user's own colours win over the preset. Both routes go through
+    // ensureReadable, so a colour that would leave text illegible is corrected
+    // before it is ever drawn rather than saved as-is and squinted at.
+    val currentTheme = remember(
+        baseTheme, accentColor, useAccentPalette, customMyBubble, customOtherBubble, isDarkTheme
+    ) {
+        if (useAccentPalette) {
+            val palette = com.neveroff.ui.theme.ChatAppearance
+                .paletteFromAccent(Color(accentColor), isDarkTheme)
+            baseTheme.copy(
+                myBubbleColor = palette.outgoing,
+                otherBubbleColor = palette.incoming
+            )
+        } else {
+            baseTheme.copy(
+                myBubbleColor = com.neveroff.ui.theme.ChatAppearance.ensureReadable(Color(customMyBubble)),
+                otherBubbleColor = com.neveroff.ui.theme.ChatAppearance.ensureReadable(Color(customOtherBubble))
+            )
+        }
+    }
 
     var isLockedMode by rememberSaveable { mutableStateOf(false) }
     var replyToId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -845,23 +880,56 @@ fun ChatScreen(
             }
         }
     ) { padding ->
-        val backgroundBrush = if (currentTheme.backgroundGradient.size >= 2 && currentTheme.backgroundGradient[0] != Color.Transparent) {
-            androidx.compose.ui.graphics.Brush.verticalGradient(currentTheme.backgroundGradient)
-        } else {
-            androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.background)
+        val backgroundBrush = when (wallpaperMode) {
+            "solid" -> androidx.compose.ui.graphics.SolidColor(Color(wallpaperColor))
+            "gradient" -> {
+                // A one-colour gradient is not a gradient, so the second stop is
+                // derived by shifting lightness rather than asking for a second
+                // pick the user has no reason to care about.
+                val base = Color(wallpaperColor)
+                val hsl = base.toHsl()
+                val far = Hsl(
+                    hsl.hue,
+                    hsl.saturation,
+                    (hsl.lightness + if (isDarkTheme) 0.12f else -0.12f).coerceIn(0f, 1f)
+                )
+                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(base, far.toColor()))
+            }
+            else ->
+                if (currentTheme.backgroundGradient.size >= 2 &&
+                    currentTheme.backgroundGradient[0] != Color.Transparent
+                ) {
+                    androidx.compose.ui.graphics.Brush.verticalGradient(currentTheme.backgroundGradient)
+                } else {
+                    androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.background)
+                }
         }
-        
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // Wallpaper layer with adjustable brightness
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundBrush)
-                    .graphicsLayer { alpha = wallpaperBrightness }
-            )
+            // Wallpaper layer: dim via alpha, blur via a render-effect. Blur is
+            // capped at 24dp because past that a photo is just a colour wash and
+            // the slider stops doing anything visible.
+            val blurRadius = (wallpaperBlur * 24f).dp
+            val wallpaperModifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (wallpaperBlur > 0.01f) Modifier.blur(blurRadius) else Modifier
+                )
+                .graphicsLayer { alpha = wallpaperBrightness }
+
+            if (wallpaperMode == "image" && wallpaperImageUri != null) {
+                coil.compose.AsyncImage(
+                    model = wallpaperImageUri,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = wallpaperModifier
+                )
+            } else {
+                Box(modifier = wallpaperModifier.background(backgroundBrush))
+            }
             if (isRecordingVideo) {
                 // Centred and large: while recording, the viewfinder is the whole point of the
                 // screen, so it sits where the user is already looking rather than tucked into

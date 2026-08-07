@@ -377,4 +377,22 @@
     <string name="username_added">Юзернейм занят</string>
     <string name="username_removed">Юзернейм удалён и остаётся закреплённым за вами.</string>
     <string name="username_primary_cannot_remove">Сначала сделайте основным другой юзернейм.</string>
+    <string name="appearance_accent">Акцентный цвет</string>
+    <string name="appearance_accent_explain">Ваши сообщения будут этого цвета, остальная палитра чата строится из него.</string>
+    <string name="appearance_use_accent">Строить палитру из акцента</string>
+    <string name="appearance_use_accent_explain">Выключите, чтобы задать цвета своих и входящих сообщений отдельно.</string>
+    <string name="appearance_my_bubble">Ваши сообщения</string>
+    <string name="appearance_their_bubble">Входящие сообщения</string>
+    <string name="appearance_wallpaper">Обои чата</string>
+    <string name="appearance_wallpaper_theme">Из темы</string>
+    <string name="appearance_wallpaper_solid">Сплошной</string>
+    <string name="appearance_wallpaper_gradient">Градиент</string>
+    <string name="appearance_wallpaper_image">Своё изображение</string>
+    <string name="appearance_wallpaper_chosen">Используется ваше изображение.</string>
+    <string name="appearance_dim">Затемнение: %1$d%%</string>
+    <string name="appearance_blur">Размытие: %1$d%%</string>
+    <string name="appearance_reset">Сбросить к теме по умолчанию</string>
+    <string name="appearance_reset_done">Тема сброшена</string>
+    <string name="appearance_contrast_ok">Контраст текста %1$s:1 - читаемо.</string>
+    <string name="appearance_contrast_adjusted">Цвет скорректирован для читаемости. Контраст %1$s:1.</string>
 </resources>
